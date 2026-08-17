@@ -1,8 +1,10 @@
 openapi: 3.1.0
 info: {title: StoreMesh Site API, version: 0.1.0}
 servers: [{url: "http://localhost:3000"}]
+security: [{bearerAuth: []}]
 paths:
-  /health: {get: {responses: {'200': {description: Healthy}}}}
+  /health: {get: {security: [], responses: {'200': {description: Healthy}}}}
+  /api/auth/login: {post: {security: [], summary: Authenticate a site user, responses: {'200': {description: Signed access token}, '401': {description: Invalid credentials}}}}
   /api/sessions: {post: {summary: Open an operational session, responses: {'201': {description: Session opened}}}}
   /api/receiving: {post: {summary: Receive and identify a batch, parameters: [{in: header, name: Idempotency-Key, required: true, schema: {type: string}}], responses: {'201': {description: Batch received}}}}
   /api/inventory: {get: {summary: Current site inventory, responses: {'200': {description: Inventory}}}}
@@ -12,3 +14,23 @@ paths:
   /api/shipments: {post: {summary: Create a shipment, responses: {'201': {description: Shipment created}}}}
   /api/print-jobs: {get: {summary: List label print jobs, responses: {'200': {description: Print jobs}}}}
   /api/trace/{batchId}: {get: {summary: Read batch genealogy, parameters: [{in: path, name: batchId, required: true, schema: {type: string}}], responses: {'200': {description: Traceability graph}}}}
+  /api/tasks: {get: {summary: List site tasks, responses: {'200': {description: Tasks}}}, post: {summary: Create an operational task, responses: {'201': {description: Task created}}}}
+  /api/tasks/{taskId}/claim: {post: {summary: Atomically claim an open task, parameters: [{in: path, name: taskId, required: true, schema: {type: string}}], responses: {'201': {description: Task claimed}, '409': {description: Already claimed}}}}
+  /api/quality-checks: {post: {summary: Record an approval, rejection, or quarantine decision, responses: {'201': {description: Quality check recorded}}}}
+  /api/sessions/{sessionId}/{action}: {post: {summary: Suspend, resume, complete, or cancel a session, parameters: [{in: path, name: sessionId, required: true, schema: {type: string}}, {in: path, name: action, required: true, schema: {enum: [suspend, resume, complete, cancel]}}], responses: {'201': {description: Session transitioned}, '409': {description: Invalid transition}}}}
+  /api/shipments/{shipmentId}/{action}: {post: {summary: Load, dispatch, deliver, or cancel a shipment, parameters: [{in: path, name: shipmentId, required: true, schema: {type: string}}, {in: path, name: action, required: true, schema: {enum: [load, dispatch, deliver, cancel]}}], responses: {'201': {description: Shipment transitioned}, '409': {description: Invalid transition}}}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer}
+  schemas:
+    Error:
+      type: object
+      required: [success, errorCode, message]
+      properties:
+        success: {const: false}
+        errorCode: {type: string}
+        message: {type: string}
+    IdempotencyKey:
+      type: string
+      minLength: 8
+      maxLength: 128
