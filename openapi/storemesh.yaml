@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info: {title: StoreMesh Site API, version: 0.1.0}
+servers: [{url: "http://localhost:3000"}]
+paths:
+  /health: {get: {responses: {'200': {description: Healthy}}}}
+  /api/sessions: {post: {summary: Open an operational session, responses: {'201': {description: Session opened}}}}
+  /api/receiving: {post: {summary: Receive and identify a batch, parameters: [{in: header, name: Idempotency-Key, required: true, schema: {type: string}}], responses: {'201': {description: Batch received}}}}
+  /api/inventory: {get: {summary: Current site inventory, responses: {'200': {description: Inventory}}}}
+  /api/movements: {post: {summary: Move a batch between zones, responses: {'201': {description: Movement recorded}}}}
+  /api/transforms: {post: {summary: Transform or merge parent batches, responses: {'201': {description: Child batch created}}}}
+  /api/packages: {post: {summary: Create a consumer or logistics package, responses: {'201': {description: Package created}}}}
+  /api/shipments: {post: {summary: Create a shipment, responses: {'201': {description: Shipment created}}}}
+  /api/print-jobs: {get: {summary: List label print jobs, responses: {'200': {description: Print jobs}}}}
+  /api/trace/{batchId}: {get: {summary: Read batch genealogy, parameters: [{in: path, name: batchId, required: true, schema: {type: string}}], responses: {'200': {description: Traceability graph}}}}
