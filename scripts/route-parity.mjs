@@ -1,3 +1,62 @@
-import{readFile}from'node:fs/promises';import{resolve}from'node:path';const serverPath=process.env.SITE_SERVER_SOURCE||resolve('..','storemesh-site-server','src','server.js'),[server,openapi]=await Promise.all([readFile(serverPath,'utf8'),readFile(resolve('openapi','storemesh.yaml'),'utf8')]);
-const routes=['/health','/ready','/metrics','/api/auth/login','/api/tasks','/api/containers','/api/configurations','/api/overrides','/api/inventory','/api/print-jobs','/api/outbox','/api/sessions','/api/packages','/api/shipments','/api/quality-checks','/api/inventory-adjustments','/api/audit','/api/internal-transfers','/api/shipments/{shipmentId}/manifest','/api/trace/{batchId}','/api/sessions/{sessionId}/draft','/api/sessions/{sessionId}/{action}','/api/receiving','/api/movements','/api/containers/{containerId}/{action}','/api/transforms','/api/sorting','/api/packages/{packageId}/{action}','/api/internal-transfers/receive','/api/shipments/{shipmentId}/{action}','/api/tasks/{taskId}/claim','/api/quality-checks/release','/api/configurations/{configurationId}/{action}','/api/overrides/{overrideId}/resolve','/api/print-jobs/{jobId}/{action}'];
-const missingContract=routes.filter(path=>!openapi.includes(`  ${path}:`));if(missingContract.length)throw new Error(`OpenAPI routes missing: ${missingContract.join(', ')}`);const anchors=new Set([...server.matchAll(/u\.pathname===['"]([^'"]+)/g)].map(x=>x[1]).concat([...server.matchAll(/u\.pathname\.startsWith\(['"]([^'"]+)/g)].map(x=>x[1]))),undocumented=[...anchors].filter(path=>!routes.some(route=>route===path||route.startsWith(path)||path.startsWith(route.replace(/\{[^}]+\}.*/,''))));if(undocumented.length)throw new Error(`Server routes missing from route catalog: ${undocumented.join(', ')}`);console.log(`OpenAPI/server parity verified for ${routes.length} route templates`);
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const canonical = path => path.replace(/\{[^}]+\}/g,'{}');
+const key = ({method,path}) => `${method.toUpperCase()} ${canonical(path)}`;
+
+function regexPath(source) {
+  let path=source.replace(/^\^/,'').replace(/\$$/,'').replaceAll('\\/','/');
+  path=path.replace(/\[\^\/\]\+/g,'{}');
+  path=path.replace(/\((?:\\.|[^)])+\)[+*?]?/g,'{}');
+  path=path.replace(/\\([.\-_])/g,'$1');
+  if(!path.startsWith('/')||/[\[\]()+*?|^$\\]/.test(path))throw new Error(`Cannot safely convert pathname regex to an OpenAPI template: /${source}/`);
+  return path;
+}
+
+export function extractServerRoutes(server) {
+  const found=[];
+  for(const match of server.matchAll(/req\.method\s*===\s*['"]([A-Z]+)['"]\s*&&\s*u\.pathname\s*===\s*['"]([^'"]+)['"]/g))found.push({method:match[1],path:match[2]});
+  for(const match of server.matchAll(/req\.method\s*===\s*['"]([A-Z]+)['"]\s*&&\s*u\.pathname\.startsWith\(\s*['"]([^'"]+)['"]\s*\)/g))found.push({method:match[1],path:match[2].replace(/\/$/,'')+'/{}'});
+
+  for(const pathnameTest of server.matchAll(/\.test\(\s*u\.pathname\s*\)/g)){
+    const cursor=pathnameTest.index;
+    const clauseStart=server.lastIndexOf('req.method',cursor);
+    const clause=server.slice(clauseStart,cursor);
+    const method=clause.match(/req\.method\s*===\s*['"]([A-Z]+)['"]/)?.[1];
+    const separator=clause.lastIndexOf('&&');
+    const literal=separator<0?'':clause.slice(separator+2).trim();
+    const expression=literal.match(/^\/(.+)\/[dgimsuvy]*$/s);
+    if(!method||!expression)throw new Error(`Unparseable pathname regex route near source offset ${cursor}; parity cannot be guaranteed`);
+    found.push({method,path:regexPath(expression[1])});
+  }
+  return [...new Map(found.map(route=>[key(route),route])).values()];
+}
+
+export function extractOpenApiRoutes(openapi) {
+  const found=[];
+  for(const line of openapi.split(/\r?\n/)){
+    const entry=line.match(/^  (\/[^:]+):\s*\{(.*)$/);if(!entry)continue;
+    for(const method of entry[2].matchAll(/(?:^|[{,]\s*)(get|post|put|patch|delete|options|head|trace)\s*:/gi))found.push({method:method[1].toUpperCase(),path:entry[1]});
+  }
+  return found;
+}
+
+export function assertRouteParity(server,openapi) {
+  const serverRoutes=extractServerRoutes(server),contractRoutes=extractOpenApiRoutes(openapi);
+  const matches=(left,right)=>left.method===right.method&&canonical(left.path).split('/').length===canonical(right.path).split('/').length&&canonical(left.path).split('/').every((part,index)=>part==='{}'||canonical(right.path).split('/')[index]==='{}'||part===canonical(right.path).split('/')[index]);
+  const undocumented=serverRoutes.filter(route=>!contractRoutes.some(contract=>matches(route,contract))).map(key);
+  const stale=contractRoutes.filter(contract=>!serverRoutes.some(route=>matches(route,contract))).map(key);
+  if(undocumented.length)throw new Error(`Server routes missing from OpenAPI: ${undocumented.join(', ')}`);
+  if(stale.length)throw new Error(`OpenAPI routes missing from server: ${stale.join(', ')}`);
+  return serverRoutes.length;
+}
+
+async function main(){
+  const serverPath=process.env.SITE_SERVER_SOURCE||resolve('..','storemesh-site-server','src','server.js');
+  const [server,openapi]=await Promise.all([readFile(serverPath,'utf8'),readFile(resolve('openapi','storemesh.yaml'),'utf8')]);
+  const count=assertRouteParity(server,openapi);
+  console.log(`OpenAPI/server parity verified for ${count} method + route templates`);
+}
+
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)await main();

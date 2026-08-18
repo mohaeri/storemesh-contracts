@@ -1,1 +1,1 @@
-{"name":"@storemesh/contracts","private":true,"type":"module","scripts":{"test":"node scripts/route-parity.mjs"}}
+{"name":"@storemesh/contracts","private":true,"type":"module","scripts":{"test":"node --test test/*.test.mjs && node scripts/route-parity.mjs"}}
