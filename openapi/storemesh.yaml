@@ -3,6 +3,7 @@ info: {title: StoreMesh Site API, version: 0.3.0}
 servers: [{url: "http://localhost:3000"}]
 security: [{bearerAuth: []}]
 paths:
+  /api/auth/sessions/{sessionId}/revoke: {post: {summary: Revoke an active authentication session, responses: {'200': {description: Session revoked}, '403': {description: Manager or administrator permission required}, '404': {description: Session not found}}}}
   /health: {get: {security: [], responses: {'200': {description: Healthy}}}}
   /api/auth/login: {post: {security: [], summary: Authenticate a site user, responses: {'200': {description: Signed access token}, '401': {description: Invalid credentials}}}}
   /api/sessions: {get: {summary: List operational sessions, responses: {'200': {description: Sessions}}}, post: {summary: Open an operational session, responses: {'201': {description: Session opened}}}}
