@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: mohaeri/storemesh-site-server
-          ssh-key: ${{ secrets.SITE_SERVER_DEPLOY_KEY }}
+          token: ${{ secrets.STOREMESH_REPO_TOKEN }}
           path: storemesh-site-server
       - uses: actions/setup-node@v6
         with: {node-version: 24}
