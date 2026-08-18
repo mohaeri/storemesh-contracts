@@ -1,0 +1,17 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with: {path: storemesh-contracts}
+      - uses: actions/checkout@v6
+        with:
+          repository: mohaeri/storemesh-site-server
+          ssh-key: ${{ secrets.SITE_SERVER_DEPLOY_KEY }}
+          path: storemesh-site-server
+      - uses: actions/setup-node@v6
+        with: {node-version: 24}
+      - run: npm test
+        working-directory: storemesh-contracts
