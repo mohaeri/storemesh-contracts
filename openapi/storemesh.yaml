@@ -11,6 +11,8 @@ paths:
   /api/inventory: {get: {summary: Current site inventory, responses: {'200': {description: Inventory}}}}
   /api/movements: {post: {summary: Move a batch between zones, responses: {'201': {description: Movement recorded}}}}
   /api/transforms: {post: {summary: Transform or merge parent batches, responses: {'201': {description: Child batch created}}}}
+  /api/cycles: {get: {summary: List machine processing cycles, responses: {'200': {description: Cycles}}}, post: {summary: Create a freeze, freeze-dry, or dry cycle from scanned physical containers, responses: {'201': {description: Cycle created}, '409': {description: Container already active in another cycle}}}}
+  /api/cycles/{cycleId}/{action}: {post: {summary: Progress a processing cycle state machine, responses: {'201': {description: Cycle transitioned}, '409': {description: Invalid transition}}}}
   /api/packages: {get: {summary: List packages, responses: {'200': {description: Packages}}}, post: {summary: Create a consumer or logistics package, responses: {'201': {description: Package created}}}}
   /api/packages/{packageId}/{action}: {post: {summary: Progress the package and label state machine, responses: {'201': {description: Package transitioned}, '409': {description: Invalid transition}}}}
   /api/shipments: {get: {summary: List shipments, responses: {'200': {description: Shipments}}}, post: {summary: Create a shipment, responses: {'201': {description: Shipment created}}}}
