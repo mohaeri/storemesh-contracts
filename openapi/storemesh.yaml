@@ -16,6 +16,7 @@ paths:
   /api/cycles/{cycleId}/{action}: {post: {summary: Progress a processing cycle state machine, responses: {'201': {description: Cycle transitioned}, '409': {description: Invalid transition}}}}
   /api/packages: {get: {summary: List packages, responses: {'200': {description: Packages}}}, post: {summary: Create a consumer or logistics package, responses: {'201': {description: Package created}}}}
   /api/packages/{packageId}/{action}: {post: {summary: Progress the package and label state machine, responses: {'201': {description: Package transitioned}, '409': {description: Invalid transition}}}}
+  /api/packages/{packageId}/scans: {post: {summary: Append one scanner-originated physical item event to a carton, responses: {'201': {description: Scan event recorded}, '409': {description: Duplicate or excess scan}}}}
   /api/shipments: {get: {summary: List shipments, responses: {'200': {description: Shipments}}}, post: {summary: Create a shipment, responses: {'201': {description: Shipment created}}}}
   /api/shipments/{shipmentId}/manifest: {get: {summary: Export a dispatched shipment manifest, responses: {'200': {description: Manifest}}}}
   /api/print-jobs: {get: {summary: List label print jobs, responses: {'200': {description: Print jobs}}}}
@@ -41,6 +42,25 @@ paths:
   /metrics: {get: {security: [], responses: {'200': {description: Prometheus metrics}}}}
   /api/sessions/{sessionId}/{action}: {post: {summary: Suspend, resume, complete, or cancel a session, parameters: [{in: path, name: sessionId, required: true, schema: {type: string}}, {in: path, name: action, required: true, schema: {enum: [suspend, resume, complete, cancel]}}], responses: {'201': {description: Session transitioned}, '409': {description: Invalid transition}}}}
   /api/shipments/{shipmentId}/{action}: {post: {summary: Load, dispatch, deliver, or cancel a shipment, parameters: [{in: path, name: shipmentId, required: true, schema: {type: string}}, {in: path, name: action, required: true, schema: {enum: [load, dispatch, deliver, cancel]}}], responses: {'201': {description: Shipment transitioned}, '409': {description: Invalid transition}}}}
+  /api/tasks/recommended: {get: {summary: Get the highest-priority eligible task, responses: {'200': {description: Recommended task}}}}
+  /api/tasks/{taskId}/reassign: {post: {summary: Reassign an active task to an eligible operator, responses: {'201': {description: Task reassigned}}}}
+  /api/skills: {get: {summary: List skills, responses: {'200': {description: Skills}}}, post: {summary: Create a skill, responses: {'201': {description: Skill created}}}}
+  /api/roles: {get: {summary: List data-backed roles and permissions, responses: {'200': {description: Roles}}}, post: {summary: Create a custom role, responses: {'201': {description: Role created}}}}
+  /api/roles/{roleCode}/update: {post: {summary: Update a role permission set, responses: {'201': {description: Role updated}}}}
+  /api/users/{userId}/roles: {post: {summary: Assign a role to a user, responses: {'201': {description: Role assigned}}}}
+  /api/users/{userId}/roles/{roleCode}: {delete: {summary: Revoke a role from a user, responses: {'201': {description: Role revoked}}}}
+  /api/users/{userId}/skills: {post: {summary: Assign a skill to a user, responses: {'201': {description: Skill assigned}}}}
+  /api/users/{userId}/skills/{skillId}: {delete: {summary: Revoke a skill from a user, responses: {'201': {description: Skill revoked}}}}
+  /api/devices: {get: {summary: List devices with heartbeat presence, responses: {'200': {description: Devices}}}, post: {summary: Register a device, responses: {'201': {description: Device registered}}}}
+  /api/devices/{deviceCode}/heartbeat: {post: {summary: Record a device heartbeat, responses: {'201': {description: Heartbeat recorded}}}}
+  /api/devices/{deviceId}/retire: {post: {summary: Retire a device, responses: {'201': {description: Device retired}}}}
+  /api/exceptions: {get: {summary: List durable operational exceptions, responses: {'200': {description: Exceptions}}}, post: {summary: Raise an exception, responses: {'201': {description: Exception raised}}}}
+  /api/exceptions/{exceptionId}/assign: {post: {summary: Assign an exception, responses: {'201': {description: Exception assigned}}}}
+  /api/exceptions/{exceptionId}/resolve: {post: {summary: Resolve an exception, responses: {'201': {description: Exception resolved}}}}
+  /api/master-data/{catalog}: {get: {summary: List a master-data catalog, responses: {'200': {description: Catalog}}}, post: {summary: Create a catalog item, responses: {'201': {description: Item created}}}}
+  /api/master-data/{catalog}/{itemId}/update: {post: {summary: Update a catalog item, responses: {'201': {description: Item updated}}}}
+  /api/qc-checklists: {get: {summary: List QC checklist definitions, responses: {'200': {description: Checklists}}}, post: {summary: Create a QC checklist, responses: {'201': {description: Checklist created}}}}
+  /api/reports/operations: {get: {summary: Aggregated yield utilization exception and task reports, responses: {'200': {description: Operational reports}}}}
 components:
   securitySchemes:
     bearerAuth: {type: http, scheme: bearer}
