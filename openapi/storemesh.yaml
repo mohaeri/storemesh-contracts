@@ -6,9 +6,14 @@ paths:
   /api/auth/sessions/{sessionId}/revoke: {post: {summary: Revoke an active authentication session, responses: {'200': {description: Session revoked}, '403': {description: Manager or administrator permission required}, '404': {description: Session not found}}}}
   /health: {get: {security: [], responses: {'200': {description: Healthy}}}}
   /api/auth/login: {post: {security: [], summary: Authenticate a site user, responses: {'200': {description: Signed access token}, '401': {description: Invalid credentials}}}}
+  /api/auth/login-badge: {post: {security: [], summary: Authenticate by a revocable scanner-originated badge code, responses: {'200': {description: Signed access token}, '401': {description: Invalid badge}}}}
   /api/sessions: {get: {summary: List operational sessions, responses: {'200': {description: Sessions}}}, post: {summary: Open an operational session, responses: {'201': {description: Session opened}}}}
   /api/sessions/{sessionId}/draft: {post: {summary: Persist an in-progress session draft, responses: {'201': {description: Draft persisted}}}}
   /api/receiving: {post: {summary: Receive and identify a batch, parameters: [{in: header, name: Idempotency-Key, required: true, schema: {type: string}}], responses: {'201': {description: Batch received}}}}
+  /api/deliveries: {get: {summary: List supplier deliveries and their basket weigh records, responses: {'200': {description: Deliveries}}}, post: {summary: Start a multi-basket supplier delivery, responses: {'201': {description: Delivery opened}}}}
+  /api/deliveries/{deliveryId}/complete: {post: {summary: Complete a delivery and create its aggregate receiving batch and cold-storage task, responses: {'201': {description: Delivery completed}, '409': {description: Empty or already completed delivery}}}}
+  /api/harvest-periods: {get: {summary: List admin-managed harvest period definitions, responses: {'200': {description: Harvest periods}}}, post: {summary: Create a harvest period definition, responses: {'201': {description: Harvest period created}}}}
+  /api/harvest-periods/{periodId}/update: {post: {summary: Update a harvest period label or status, responses: {'201': {description: Harvest period updated}}}}
   /api/inventory: {get: {summary: Current site inventory, responses: {'200': {description: Inventory}}}}
   /api/movements: {post: {summary: Move a batch between zones, responses: {'201': {description: Movement recorded}}}}
   /api/transforms: {post: {summary: Transform or merge parent batches, responses: {'201': {description: Child batch created}}}}
@@ -48,6 +53,7 @@ paths:
   /api/roles: {get: {summary: List data-backed roles and permissions, responses: {'200': {description: Roles}}}, post: {summary: Create a custom role, responses: {'201': {description: Role created}}}}
   /api/roles/{roleCode}/update: {post: {summary: Update a role permission set, responses: {'201': {description: Role updated}}}}
   /api/users/{userId}/roles: {post: {summary: Assign a role to a user, responses: {'201': {description: Role assigned}}}}
+  /api/users/{userId}/badge: {post: {summary: Generate or replace a user's random badge credential, responses: {'201': {description: New badge code returned once}}}}
   /api/users/{userId}/roles/{roleCode}: {delete: {summary: Revoke a role from a user, responses: {'201': {description: Role revoked}}}}
   /api/users/{userId}/skills: {post: {summary: Assign a skill to a user, responses: {'201': {description: Skill assigned}}}}
   /api/users/{userId}/skills/{skillId}: {delete: {summary: Revoke a skill from a user, responses: {'201': {description: Skill revoked}}}}
