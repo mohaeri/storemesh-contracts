@@ -22,7 +22,17 @@ paths:
   /api/packages: {get: {summary: List packages, responses: {'200': {description: Packages}}}, post: {summary: Create a consumer or logistics package, responses: {'201': {description: Package created}}}}
   /api/packages/{packageId}/{action}: {post: {summary: Progress the package and label state machine, responses: {'201': {description: Package transitioned}, '409': {description: Invalid transition}}}}
   /api/packages/{packageId}/scans: {post: {summary: Append one scanner-originated physical item event to a carton, responses: {'201': {description: Scan event recorded}, '409': {description: Duplicate or excess scan}}}}
-  /api/shipments: {get: {summary: List shipments, responses: {'200': {description: Shipments}}}, post: {summary: Create a shipment, responses: {'201': {description: Shipment created}}}}
+  /api/shipments: {get: {summary: List customer shipments, responses: {'200': {description: Shipments}}}, post: {summary: Create a customer shipment from a Sales Order, responses: {'201': {description: Shipment created}}}}
+  /api/customers: {get: {summary: List customers, responses: {'200': {description: Customers}}}, post: {summary: Create customer, responses: {'201': {description: Customer created}}}}
+  /api/customers/{customerId}/update: {post: {summary: Update customer, responses: {'201': {description: Customer updated}}}}
+  /api/sales-orders: {get: {summary: List sales orders, responses: {'200': {description: Sales orders}}}, post: {summary: Create sales order, responses: {'201': {description: Sales order created}}}}
+  /api/shipment-carton-scans: {get: {summary: List shipment carton scans, responses: {'200': {description: Scans}}}}
+  /api/shipments/{shipmentId}/scans: {post: {summary: Scan an expected carton, responses: {'201': {description: Scan recorded}}}}
+  /api/packaging/sessions: {post: {summary: Open a dedicated packaging session, responses: {'201': {description: Session opened}}}}
+  /api/packaging/weigh: {post: {summary: Record the permanent pre-packaging measurement, responses: {'201': {description: Measurement recorded}}}}
+  /api/batches/{batchId}/destination: {post: {summary: Manager assigns the next destination after sorting, responses: {'201': {description: Destination assigned}}}}
+  /api/internal-shipments: {post: {summary: Create an explicitly inter-site shipment, responses: {'201': {description: Internal shipment created}}}}
+  /api/internal-shipments/{shipmentId}/{action}: {post: {summary: Transition an inter-site shipment, responses: {'201': {description: Internal shipment transitioned}}}}
   /api/shipments/{shipmentId}/manifest: {get: {summary: Export a dispatched shipment manifest, responses: {'200': {description: Manifest}}}}
   /api/print-jobs: {get: {summary: List label print jobs, responses: {'200': {description: Print jobs}}}}
   /api/print-jobs/{jobId}/{action}: {post: {summary: Complete fail or retry a label print attempt, responses: {'201': {description: Print attempt updated}}}}
@@ -46,7 +56,7 @@ paths:
   /ready: {get: {security: [], responses: {'200': {description: Dependencies ready}, '503': {description: Dependency unavailable}}}}
   /metrics: {get: {security: [], responses: {'200': {description: Prometheus metrics}}}}
   /api/sessions/{sessionId}/{action}: {post: {summary: Suspend, resume, complete, or cancel a session, parameters: [{in: path, name: sessionId, required: true, schema: {type: string}}, {in: path, name: action, required: true, schema: {enum: [suspend, resume, complete, cancel]}}], responses: {'201': {description: Session transitioned}, '409': {description: Invalid transition}}}}
-  /api/shipments/{shipmentId}/{action}: {post: {summary: Load, dispatch, deliver, or cancel a shipment, parameters: [{in: path, name: shipmentId, required: true, schema: {type: string}}, {in: path, name: action, required: true, schema: {enum: [load, dispatch, deliver, cancel]}}], responses: {'201': {description: Shipment transitioned}, '409': {description: Invalid transition}}}}
+  /api/shipments/{shipmentId}/{action}: {post: {summary: Advance Draft, Picking, Ready, Loaded, Shipped, Closed lifecycle, parameters: [{in: path, name: shipmentId, required: true, schema: {type: string}}, {in: path, name: action, required: true, schema: {enum: [start_picking, ready, load, ship, close, cancel]}}], responses: {'201': {description: Shipment transitioned}, '409': {description: Invalid transition}}}}
   /api/tasks/recommended: {get: {summary: Get the highest-priority eligible task, responses: {'200': {description: Recommended task}}}}
   /api/tasks/{taskId}/reassign: {post: {summary: Reassign an active task to an eligible operator, responses: {'201': {description: Task reassigned}}}}
   /api/skills: {get: {summary: List skills, responses: {'200': {description: Skills}}}, post: {summary: Create a skill, responses: {'201': {description: Skill created}}}}
@@ -55,6 +65,7 @@ paths:
   /api/users: {get: {summary: List users with role skill status and badge-assignment metadata, responses: {'200': {description: Safe user administration view}, '403': {description: Administrator permission required}}}}
   /api/users/{userId}/roles: {post: {summary: Assign a role to a user, responses: {'201': {description: Role assigned}}}}
   /api/users/{userId}/badge: {post: {summary: Generate or replace a user's random badge credential, responses: {'201': {description: New badge code returned once}}}}
+  /api/users/{userId}/pin: {post: {summary: Generate or replace the independently hashed six-digit badge PIN, responses: {'201': {description: New PIN returned once}}}}
   /api/users/{userId}/roles/{roleCode}: {delete: {summary: Revoke a role from a user, responses: {'201': {description: Role revoked}}}}
   /api/users/{userId}/skills: {post: {summary: Assign a skill to a user, responses: {'201': {description: Skill assigned}}}}
   /api/users/{userId}/skills/{skillId}: {delete: {summary: Revoke a skill from a user, responses: {'201': {description: Skill revoked}}}}
