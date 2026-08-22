@@ -55,6 +55,7 @@ paths:
   /api/users: {get: {summary: List users with role skill status and badge-assignment metadata, responses: {'200': {description: Safe user administration view}, '403': {description: Administrator permission required}}}}
   /api/users/{userId}/roles: {post: {summary: Assign a role to a user, responses: {'201': {description: Role assigned}}}}
   /api/users/{userId}/badge: {post: {summary: Generate or replace a user's random badge credential, responses: {'201': {description: New badge code returned once}}}}
+  /api/users/{userId}/pin: {post: {summary: Generate or replace the independently hashed six-digit badge PIN, responses: {'201': {description: New PIN returned once}}}}
   /api/users/{userId}/roles/{roleCode}: {delete: {summary: Revoke a role from a user, responses: {'201': {description: Role revoked}}}}
   /api/users/{userId}/skills: {post: {summary: Assign a skill to a user, responses: {'201': {description: Skill assigned}}}}
   /api/users/{userId}/skills/{skillId}: {delete: {summary: Revoke a skill from a user, responses: {'201': {description: Skill revoked}}}}
