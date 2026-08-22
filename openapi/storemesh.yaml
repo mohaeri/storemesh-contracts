@@ -52,6 +52,7 @@ paths:
   /api/skills: {get: {summary: List skills, responses: {'200': {description: Skills}}}, post: {summary: Create a skill, responses: {'201': {description: Skill created}}}}
   /api/roles: {get: {summary: List data-backed roles and permissions, responses: {'200': {description: Roles}}}, post: {summary: Create a custom role, responses: {'201': {description: Role created}}}}
   /api/roles/{roleCode}/update: {post: {summary: Update a role permission set, responses: {'201': {description: Role updated}}}}
+  /api/users: {get: {summary: List users with role skill status and badge-assignment metadata, responses: {'200': {description: Safe user administration view}, '403': {description: Administrator permission required}}}}
   /api/users/{userId}/roles: {post: {summary: Assign a role to a user, responses: {'201': {description: Role assigned}}}}
   /api/users/{userId}/badge: {post: {summary: Generate or replace a user's random badge credential, responses: {'201': {description: New badge code returned once}}}}
   /api/users/{userId}/roles/{roleCode}: {delete: {summary: Revoke a role from a user, responses: {'201': {description: Role revoked}}}}
