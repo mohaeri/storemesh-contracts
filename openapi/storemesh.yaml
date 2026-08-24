@@ -43,6 +43,11 @@ paths:
   /api/quality-checks/release: {post: {summary: Release quarantined inventory, responses: {'201': {description: Inventory released}}}}
   /api/containers: {get: {summary: List containers, responses: {'200': {description: Containers}}}, post: {summary: Create a stage-aware container, responses: {'201': {description: Container created}}}}
   /api/containers/{containerId}/{action}: {post: {summary: Assign inventory or move a container, responses: {'201': {description: Container updated}}}}
+  /api/deliveries/{deliveryId}/move-to-cold-storage: {post: {summary: Move each completed-delivery container to dirty cold storage, responses: {'201': {description: Containers moved}}}}
+  /api/fresh-net-lots: {get: {summary: List aggregate fresh-export net lots, responses: {'200': {description: Net lots}}}, post: {summary: Pack count-based nets without per-net QR identities, responses: {'201': {description: Net lot created}}}}
+  /api/fresh-shipping-boxes: {get: {summary: List QR-labelled fresh shipping boxes, responses: {'200': {description: Shipping boxes}}}, post: {summary: Assemble a fresh shipping box from net lots, responses: {'201': {description: Shipping box created}}}}
+  /api/consumables: {get: {summary: List consumable supply stock, responses: {'200': {description: Consumables}}}, post: {summary: Define a consumable supply item, responses: {'201': {description: Consumable created}}}}
+  /api/consumables/{consumableId}/receive: {post: {summary: Record an inbound consumable purchase receipt, responses: {'201': {description: Receipt recorded}}}}
   /api/sorting: {post: {summary: Split a batch by grade and size, responses: {'201': {description: Sorting outputs created}}}}
   /api/configurations: {get: {summary: List configuration versions, responses: {'200': {description: Configurations}}}, post: {summary: Create configuration version, responses: {'201': {description: Configuration created}}}}
   /api/configurations/{configurationId}/{action}: {post: {summary: Approve or activate configuration, responses: {'201': {description: Configuration transitioned}}}}
