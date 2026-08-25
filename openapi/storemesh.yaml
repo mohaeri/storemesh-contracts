@@ -32,16 +32,16 @@ paths:
   /api/packaging/weigh: {post: {summary: Record the permanent pre-packaging measurement, responses: {'201': {description: Measurement recorded}}}}
   /api/batches/{batchId}/destination: {post: {summary: Manager assigns the next destination after sorting, responses: {'201': {description: Destination assigned}}}}
   /api/internal-shipments: {post: {summary: Create an explicitly inter-site shipment, responses: {'201': {description: Internal shipment created}}}}
-  /api/internal-shipments/{shipmentId}/{action}: {post: {summary: Transition an inter-site shipment, responses: {'201': {description: Internal shipment transitioned}}}}
-  /api/shipments/{shipmentId}/manifest: {get: {summary: Export a dispatched shipment manifest, responses: {'200': {description: Manifest}}}}
+  /api/internal-shipments/{shipmentId}/{action}: {post: {summary: Transition an inter-site shipment; dispatch requires an active session and physical scans of every package, responses: {'201': {description: Internal shipment transitioned}, '409': {description: TRANSFER_PHYSICAL_SCAN_REQUIRED or invalid transition}}}}
+  /api/shipments/{shipmentId}/manifest: {get: {summary: Export the HMAC-signed version 2 manifest of a dispatched inter-site shipment, responses: {'200': {description: Signed manifest}, '409': {description: Transfer has not been dispatched}}}}
   /api/print-jobs: {get: {summary: List label print jobs, responses: {'200': {description: Print jobs}}}}
   /api/print-jobs/{jobId}/{action}: {post: {summary: Complete fail or retry a label print attempt, responses: {'201': {description: Print attempt updated}}}}
   /api/trace/{batchId}: {get: {summary: Read batch genealogy, parameters: [{in: path, name: batchId, required: true, schema: {type: string}}], responses: {'200': {description: Traceability graph}}}}
   /api/tasks: {get: {summary: List site tasks, responses: {'200': {description: Tasks}}}, post: {summary: Create an operational task, responses: {'201': {description: Task created}}}}
-  /api/tasks/{taskId}/claim: {post: {summary: Atomically claim an open task, parameters: [{in: path, name: taskId, required: true, schema: {type: string}}], responses: {'201': {description: Task claimed}, '409': {description: Already claimed}}}}
-  /api/quality-checks: {get: {summary: List quality checks, responses: {'200': {description: Quality checks}}}, post: {summary: Record an approval, rejection, or quarantine decision, responses: {'201': {description: Quality check recorded}}}}
-  /api/quality-checks/release: {post: {summary: Release quarantined inventory, responses: {'201': {description: Inventory released}}}}
-  /api/containers: {get: {summary: List containers, responses: {'200': {description: Containers}}}, post: {summary: Create a stage-aware container, responses: {'201': {description: Container created}}}}
+  /api/tasks/{taskId}/claim: {post: {summary: Atomically claim an unassigned or self-assigned task without overwriting another assignee, parameters: [{in: path, name: taskId, required: true, schema: {type: string}}], responses: {'201': {description: Task claimed or idempotently re-claimed by its assignee}, '409': {description: TASK_ASSIGNED_TO_ANOTHER or task unavailable}}}}
+  /api/quality-checks: {get: {summary: List quality checks, responses: {'200': {description: Quality checks}}}, post: {summary: Record an approval, rejection, or quarantine using a checklist matching the batch actual stage and an attested JWT role, responses: {'201': {description: Quality check recorded}, '403': {description: QC_ATTESTATION_ROLE_MISMATCH}, '409': {description: QC_CHECKLIST_STAGE_MISMATCH}}}}
+  /api/quality-checks/release: {post: {summary: Release quarantined inventory and atomically align its physical container with the restored batch zone and status, responses: {'201': {description: Inventory and container released}}}}
+  /api/containers: {get: {summary: List containers, responses: {'200': {description: Containers}}}, post: {summary: Create a stage-aware container; RECEIVING_OPERATOR is limited to basic reusable BASKET or CRATE in RECEIVING, responses: {'201': {description: Container created}, '403': {description: Basic receiving-container scope exceeded}}}}
   /api/containers/{containerId}/{action}: {post: {summary: Assign inventory or move a container, responses: {'201': {description: Container updated}}}}
   /api/deliveries/{deliveryId}/move-to-cold-storage: {post: {summary: Move each completed-delivery container to dirty cold storage, responses: {'201': {description: Containers moved}}}}
   /api/fresh-net-lots: {get: {summary: List aggregate fresh-export net lots, responses: {'200': {description: Net lots}}}, post: {summary: Pack count-based nets without per-net QR identities, responses: {'201': {description: Net lot created}}}}
@@ -54,7 +54,7 @@ paths:
   /api/overrides: {get: {summary: List manager overrides, responses: {'200': {description: Overrides}}}, post: {summary: Request an override, responses: {'201': {description: Override requested}}}}
   /api/overrides/{overrideId}/resolve: {post: {summary: Resolve a manager override, responses: {'201': {description: Override resolved}}}}
   /api/internal-transfers: {get: {summary: List received transfers, responses: {'200': {description: Transfers}}}}
-  /api/internal-transfers/receive: {post: {summary: Receive a site manifest, responses: {'201': {description: Transfer received}}}}
+  /api/internal-transfers/receive: {post: {summary: Verify a signed site manifest and physical receipt scans; receivedBy is always derived from the bearer token, responses: {'201': {description: Transfer received}, '403': {description: TRANSFER_SIGNATURE_REQUIRED, TRANSFER_SIGNATURE_INVALID, or destination mismatch}, '409': {description: TRANSFER_PHYSICAL_SCAN_REQUIRED or duplicate receipt}}}}
   /api/inventory-adjustments: {get: {summary: List inventory adjustments, responses: {'200': {description: Adjustments}}}, post: {summary: Record a controlled adjustment, responses: {'201': {description: Adjustment recorded}}}}
   /api/audit: {get: {summary: Read immutable audit events, responses: {'200': {description: Audit events}}}}
   /api/outbox: {get: {summary: Read cloud delivery outbox, responses: {'200': {description: Outbox events}}}}
@@ -63,7 +63,7 @@ paths:
   /api/sessions/{sessionId}/{action}: {post: {summary: Suspend, resume, complete, or cancel a session, parameters: [{in: path, name: sessionId, required: true, schema: {type: string}}, {in: path, name: action, required: true, schema: {enum: [suspend, resume, complete, cancel]}}], responses: {'201': {description: Session transitioned}, '409': {description: Invalid transition}}}}
   /api/shipments/{shipmentId}/{action}: {post: {summary: Advance Draft, Picking, Ready, Loaded, Shipped, Closed lifecycle, parameters: [{in: path, name: shipmentId, required: true, schema: {type: string}}, {in: path, name: action, required: true, schema: {enum: [start_picking, ready, load, ship, close, cancel]}}], responses: {'201': {description: Shipment transitioned}, '409': {description: Invalid transition}}}}
   /api/tasks/recommended: {get: {summary: Get the highest-priority eligible task, responses: {'200': {description: Recommended task}}}}
-  /api/tasks/{taskId}/reassign: {post: {summary: Reassign an active task to an eligible operator, responses: {'201': {description: Task reassigned}}}}
+  /api/tasks/{taskId}/reassign: {post: {summary: Manager reassigns an active task to an eligible operator with a required reason, responses: {'201': {description: Task reassigned}, '400': {description: TASK_REASSIGN_REASON_REQUIRED}}}}
   /api/skills: {get: {summary: List skills, responses: {'200': {description: Skills}}}, post: {summary: Create a skill, responses: {'201': {description: Skill created}}}}
   /api/roles: {get: {summary: List data-backed roles and permissions, responses: {'200': {description: Roles}}}, post: {summary: Create a custom role, responses: {'201': {description: Role created}}}}
   /api/roles/{roleCode}/update: {post: {summary: Update a role permission set, responses: {'201': {description: Role updated}}}}
@@ -99,3 +99,16 @@ components:
       type: string
       minLength: 8
       maxLength: 128
+    SignedTransferManifest:
+      type: object
+      required: [manifestVersion, nonce, sourceSite, destinationSite, shipmentCode, status, dispatchedAt, packages, signature]
+      properties:
+        manifestVersion: {const: 2}
+        nonce: {type: string, format: uuid}
+        sourceSite: {type: string}
+        destinationSite: {type: string}
+        shipmentCode: {type: string}
+        status: {enum: [DISPATCHED, DELIVERED]}
+        dispatchedAt: {type: string, format: date-time}
+        packages: {type: array, minItems: 1, items: {type: object}}
+        signature: {type: string, description: Base64url HMAC-SHA256 over the canonical unsigned manifest}
