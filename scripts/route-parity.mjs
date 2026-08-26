@@ -67,6 +67,10 @@ export function assertCriticalOperationContracts(openapi){
   if(freshNets&&(!freshNets.includes('physically scanned BASKET or CRATE')||!freshNets.includes('CONTAINER_SCAN_REQUIRED')))throw new Error('OpenAPI Fresh Export contract must require a scanned physical source container');
   const freshBoxes=openapi.match(/^  \/api\/fresh-shipping-boxes:.*$/m)?.[0]??'';
   if(freshBoxes&&(!freshBoxes.includes('aggregating repeated allocations by netLotId')||!freshBoxes.includes('LABEL_PENDING')||!freshBoxes.includes('completePrint')||!freshBoxes.includes('READY_TO_SHIP')))throw new Error('OpenAPI Fresh Shipping Box contract must aggregate net-lot allocations and require completed printing before shipment readiness');
+  const internalCreate=openapi.match(/^  \/api\/internal-shipments:.*$/m)?.[0]??'',internalAction=openapi.match(/^  \/api\/internal-shipments\/\{shipmentId\}\/\{action\}:.*$/m)?.[0]??'',internalReceive=openapi.match(/^  \/api\/internal-transfers\/receive:.*$/m)?.[0]??'';
+  if(internalCreate&&(!internalCreate.includes('distinct active catalog site')||!internalCreate.includes('unique eligible top-level packages')))throw new Error('OpenAPI internal-transfer creation must reject self unknown sites and duplicate packages');
+  if(internalAction&&(!internalAction.includes('active session and vehicle')||!internalAction.includes('latest APPROVED QC')||!internalAction.includes('completed print')||!internalAction.includes('cancel releases reserved packages')))throw new Error('OpenAPI internal-transfer transitions must revalidate eligibility and release cancelled reservations');
+  if(internalReceive&&(!internalReceive.includes('available empty RECEIVING container')||!internalReceive.includes('receivedBy is derived from the authenticated session')||!internalReceive.includes('unique package')))throw new Error('OpenAPI internal-transfer receipt must require physical carrier scans and server-derived receiver identity');
 }
 
 async function main(){
