@@ -71,6 +71,10 @@ export function assertCriticalOperationContracts(openapi){
   if(internalCreate&&(!internalCreate.includes('distinct active catalog site')||!internalCreate.includes('unique eligible top-level packages')))throw new Error('OpenAPI internal-transfer creation must reject self unknown sites and duplicate packages');
   if(internalAction&&(!internalAction.includes('active session and vehicle')||!internalAction.includes('latest APPROVED QC')||!internalAction.includes('completed print')||!internalAction.includes('cancel releases reserved packages')))throw new Error('OpenAPI internal-transfer transitions must revalidate eligibility and release cancelled reservations');
   if(internalReceive&&(!internalReceive.includes('available empty RECEIVING container')||!internalReceive.includes('receivedBy is derived from the authenticated session')||!internalReceive.includes('unique package')))throw new Error('OpenAPI internal-transfer receipt must require physical carrier scans and server-derived receiver identity');
+  const tasks=openapi.match(/^  \/api\/tasks:.*$/m)?.[0]??'',taskClaim=openapi.match(/^  \/api\/tasks\/\{taskId\}\/claim:.*$/m)?.[0]??'',taskRecommended=openapi.match(/^  \/api\/tasks\/recommended:.*$/m)?.[0]??'';
+  if(tasks&&(!tasks.includes('separate available')||!tasks.includes('selected session role')||!tasks.includes('operationType')))throw new Error('OpenAPI task listing must separate availability and bind operation-backed tasks');
+  if(taskClaim&&(!taskClaim.includes('selectedRole device and station')||!taskClaim.includes('never the JWT full role set')||!taskClaim.includes('SESSION_ACTOR_MISMATCH')))throw new Error('OpenAPI task claim must use the active role-scoped session');
+  if(taskRecommended&&!taskRecommended.includes('active session selectedRole'))throw new Error('OpenAPI task recommendation must use the active role-scoped session');
 }
 
 async function main(){
