@@ -3,7 +3,7 @@ info: {title: StoreMesh Site API, version: 0.3.0}
 servers: [{url: "http://localhost:3000"}]
 security: [{bearerAuth: []}]
 paths:
-  /api/measurements: {post: {summary: Capture a server-timestamped raw reading from a registered active scale and operational session, responses: {'201': {description: Provenance-bearing measurement captured}, '403': {description: Invalid scale or station}}}}
+  /api/measurements: {post: {summary: Capture a server-timestamped raw reading from a registered active scale and operational session, including non-authoritative WASH_OBSERVATION and SLICE_OBSERVATION readings, responses: {'201': {description: Provenance-bearing measurement captured}, '403': {description: Invalid scale or station}}}}
   /api/auth/sessions/{sessionId}/revoke: {post: {summary: Revoke an active authentication session, responses: {'200': {description: Session revoked}, '403': {description: Manager or administrator permission required}, '404': {description: Session not found}}}}
   /health: {get: {security: [], responses: {'200': {description: Healthy}}}}
   /api/auth/login: {post: {security: [], summary: Authenticate a site user, responses: {'200': {description: Signed access token}, '401': {description: Invalid credentials}}}}
@@ -17,7 +17,7 @@ paths:
   /api/harvest-periods/{periodId}/update: {post: {summary: Update a harvest period label or status, responses: {'201': {description: Harvest period updated}}}}
   /api/inventory: {get: {summary: Current site inventory, responses: {'200': {description: Inventory}}}}
   /api/movements: {post: {summary: Move a batch between zones, responses: {'201': {description: Movement recorded}}}}
-  /api/transforms: {post: {summary: Transform or merge parent batches, responses: {'201': {description: Child batch created}}}}
+  /api/transforms: {post: {summary: Apply identity-preserving WASH or SLICE to one scanned whole batch, or create genealogy only for a material MERGE; observation weights never replace WASH or SLICE inventory weight, responses: {'201': {description: Existing batch transitioned or material child batch created}, '409': {description: Identity-preserving process invariant violated}}}}
   /api/cycles: {get: {summary: List machine processing cycles, responses: {'200': {description: Cycles}}}, post: {summary: Create a freeze, freeze-dry, or dry cycle from scanned physical containers, responses: {'201': {description: Cycle created}, '409': {description: Container already active in another cycle}}}}
   /api/cycles/{cycleId}/{action}: {post: {summary: Progress a processing cycle state machine, responses: {'201': {description: Cycle transitioned}, '409': {description: Invalid transition}}}}
   /api/packages: {get: {summary: List packages, responses: {'200': {description: Packages}}}, post: {summary: Create a consumer or logistics package, responses: {'201': {description: Package created}}}}
@@ -49,7 +49,7 @@ paths:
   /api/fresh-shipping-boxes: {get: {summary: List QR-labelled fresh shipping boxes, responses: {'200': {description: Shipping boxes}}}, post: {summary: Assemble a fresh shipping box from net lots, responses: {'201': {description: Shipping box created}}}}
   /api/consumables: {get: {summary: List consumable supply stock, responses: {'200': {description: Consumables}}}, post: {summary: Define a consumable supply item, responses: {'201': {description: Consumable created}}}}
   /api/consumables/{consumableId}/receive: {post: {summary: Record an inbound consumable purchase receipt, responses: {'201': {description: Receipt recorded}}}}
-  /api/sorting: {post: {summary: Split a batch by grade and size, responses: {'201': {description: Sorting outputs created}}}}
+  /api/sorting: {post: {summary: Split a batch by grade and size only after a distinct empty physical output container is scanned for every output, responses: {'201': {description: Sorting outputs atomically assigned to their scanned containers}, '400': {description: SORT_OUTPUT_CONTAINER_SCAN_REQUIRED}, '409': {description: Duplicate unavailable occupied or incorrectly staged output container}}}}
   /api/configurations: {get: {summary: List configuration versions, responses: {'200': {description: Configurations}}}, post: {summary: Create configuration version, responses: {'201': {description: Configuration created}}}}
   /api/configurations/{configurationId}/{action}: {post: {summary: Approve or activate configuration, responses: {'201': {description: Configuration transitioned}}}}
   /api/overrides: {get: {summary: List manager overrides, responses: {'200': {description: Overrides}}}, post: {summary: Request an override, responses: {'201': {description: Override requested}}}}

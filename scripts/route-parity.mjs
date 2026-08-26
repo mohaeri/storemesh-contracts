@@ -52,10 +52,18 @@ export function assertRouteParity(server,openapi) {
   return serverRoutes.length;
 }
 
+export function assertCriticalOperationContracts(openapi){
+  const transform=openapi.match(/^  \/api\/transforms:.*$/m)?.[0]??'';
+  if(!transform.includes('identity-preserving WASH or SLICE')||!transform.includes('observation weights never replace'))throw new Error('OpenAPI transform contract must preserve WASH/SLICE batch identity and authoritative inventory weight');
+  const sorting=openapi.match(/^  \/api\/sorting:.*$/m)?.[0]??'';
+  if(!sorting.includes('distinct empty physical output container')||!sorting.includes('SORT_OUTPUT_CONTAINER_SCAN_REQUIRED'))throw new Error('OpenAPI sorting contract must require a distinct scanned physical container for every output');
+}
+
 async function main(){
   const serverPath=process.env.SITE_SERVER_SOURCE||resolve('..','storemesh-site-server','src','server.js');
   const [server,openapi]=await Promise.all([readFile(serverPath,'utf8'),readFile(resolve('openapi','storemesh.yaml'),'utf8')]);
   const count=assertRouteParity(server,openapi);
+  assertCriticalOperationContracts(openapi);
   console.log(`OpenAPI/server parity verified for ${count} method + route templates`);
 }
 
