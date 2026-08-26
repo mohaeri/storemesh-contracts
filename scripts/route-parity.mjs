@@ -57,6 +57,16 @@ export function assertCriticalOperationContracts(openapi){
   if(!transform.includes('identity-preserving WASH or SLICE')||!transform.includes('observation weights never replace'))throw new Error('OpenAPI transform contract must preserve WASH/SLICE batch identity and authoritative inventory weight');
   const sorting=openapi.match(/^  \/api\/sorting:.*$/m)?.[0]??'';
   if(!sorting.includes('distinct empty physical output container')||!sorting.includes('SORT_OUTPUT_CONTAINER_SCAN_REQUIRED'))throw new Error('OpenAPI sorting contract must require a distinct scanned physical container for every output');
+  const shipment=openapi.match(/^  \/api\/shipments:.*$/m)?.[0]??'',shipmentScan=openapi.match(/^  \/api\/shipments\/\{shipmentId\}\/scans:.*$/m)?.[0]??'',shipmentAction=openapi.match(/^  \/api\/shipments\/\{shipmentId\}\/\{action\}:.*$/m)?.[0]??'';
+  if(shipment&&(!shipment.includes('Fresh Shipping Boxes')||!shipmentScan.includes('Fresh Shipping Box')))throw new Error('OpenAPI customer-shipment contract must include physically scanned Fresh Shipping Boxes');
+  if(shipmentAction){
+    for(const term of['latest APPROVED QC','genuine completed printing','no blocking exception'])if(!shipment.includes(term))throw new Error(`OpenAPI shipment creation must document ${term}`);
+    for(const term of['revalidat','current status','QC','genuine print','blocking exceptions'])if(!shipmentScan.includes(term)||!shipmentAction.includes(term))throw new Error(`OpenAPI shipment scan and transitions must document ${term}`);
+  }
+  const freshNets=openapi.match(/^  \/api\/fresh-net-lots:.*$/m)?.[0]??'';
+  if(freshNets&&(!freshNets.includes('physically scanned BASKET or CRATE')||!freshNets.includes('CONTAINER_SCAN_REQUIRED')))throw new Error('OpenAPI Fresh Export contract must require a scanned physical source container');
+  const freshBoxes=openapi.match(/^  \/api\/fresh-shipping-boxes:.*$/m)?.[0]??'';
+  if(freshBoxes&&(!freshBoxes.includes('aggregating repeated allocations by netLotId')||!freshBoxes.includes('LABEL_PENDING')||!freshBoxes.includes('completePrint')||!freshBoxes.includes('READY_TO_SHIP')))throw new Error('OpenAPI Fresh Shipping Box contract must aggregate net-lot allocations and require completed printing before shipment readiness');
 }
 
 async function main(){
