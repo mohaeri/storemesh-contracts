@@ -75,6 +75,8 @@ export function assertCriticalOperationContracts(openapi){
   if(tasks&&(!tasks.includes('separate available')||!tasks.includes('selected session role')||!tasks.includes('operationType')))throw new Error('OpenAPI task listing must separate availability and bind operation-backed tasks');
   if(taskClaim&&(!taskClaim.includes('selectedRole device and station')||!taskClaim.includes('never the JWT full role set')||!taskClaim.includes('SESSION_ACTOR_MISMATCH')))throw new Error('OpenAPI task claim must use the active role-scoped session');
   if(taskRecommended&&!taskRecommended.includes('active session selectedRole'))throw new Error('OpenAPI task recommendation must use the active role-scoped session');
+  const printAction=openapi.match(/^  \/api\/print-jobs\/\{jobId\}\/\{action\}:.*$/m)?.[0]??'';
+  if(printAction&&(!printAction.includes('non-empty reason')||!printAction.includes('PRINTING configuration')||!printAction.includes('resolves matching label-failure exceptions')))throw new Error('OpenAPI print retry contract must document reason, configured excessive-reprint control, and automatic exception resolution');
 }
 
 async function main(){
