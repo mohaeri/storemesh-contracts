@@ -100,7 +100,7 @@ paths:
   /api/devices: {get: {summary: List devices with heartbeat presence, responses: {'200': {description: Devices}}}, post: {summary: Register a device, responses: {'201': {description: Device registered}}}}
   /api/devices/{deviceCode}/heartbeat: {post: {summary: Record a device heartbeat, responses: {'201': {description: Heartbeat recorded}}}}
   /api/devices/{deviceId}/retire: {post: {summary: Retire a device, responses: {'201': {description: Device retired}}}}
-  /api/exceptions: {get: {summary: List durable operational exceptions, responses: {'200': {description: Exceptions}}}, post: {summary: Raise an exception, responses: {'201': {description: Exception raised}}}}
+  /api/exceptions: {get: {summary: List durable operational exceptions including operator notes, responses: {'200': {description: Exceptions}}}, post: {summary: Raise an exception with an optional free-text note; open HIGH or CRITICAL Batch exceptions block operations, requestBody: {required: true, content: {application/json: {schema: {type: object, properties: {type: {type: string}, entityType: {type: string}, entityId: {type: string, format: uuid}, severity: {type: string}, note: {type: string, nullable: true}}}}}}, responses: {'201': {description: Exception raised}}}}
   /api/exceptions/{exceptionId}/assign: {post: {summary: Assign an exception, responses: {'201': {description: Exception assigned}}}}
   /api/exceptions/{exceptionId}/resolve: {post: {summary: Resolve an exception, responses: {'201': {description: Exception resolved}}}}
   /api/master-data/{catalog}: {get: {summary: List a master-data catalog, responses: {'200': {description: Catalog}}}, post: {summary: Create a catalog item, responses: {'201': {description: Item created}}}}
