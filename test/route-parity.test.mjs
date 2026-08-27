@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertCriticalOperationContracts,assertRouteParity,extractServerRoutes } from '../scripts/route-parity.mjs';
+import { assertCriticalOperationContracts,assertRouteParity,extractOpenApiRoutes,extractServerRoutes } from '../scripts/route-parity.mjs';
 
 test('extracts direct, prefix, and regex pathname routes with methods',()=>{
   const source=`
@@ -17,6 +17,20 @@ test('an undocumented regex-matched route fails parity',()=>{
   const server=`if(req.method==='POST'&&/^\\/api\\/secret\\/[^/]+\\/bypass$/.test(u.pathname)) {}`;
   const openapi=`paths:\n  /api/other: {post: {responses: {}}}`;
   assert.throws(()=>assertRouteParity(server,openapi),/POST \/api\/secret\/{}\/bypass/);
+});
+
+test('extracts both inline and standard multiline OpenAPI operations',()=>{
+  const openapi=`paths:
+  /api/inline: {get: {responses: {}}}
+  /api/multiline:
+    post:
+      requestBody:
+        required: true
+      responses:
+        '200': {description: ok}`;
+  assert.deepEqual(extractOpenApiRoutes(openapi).map(x=>`${x.method} ${x.path}`),[
+    'GET /api/inline','POST /api/multiline'
+  ]);
 });
 
 test('critical transform contract cannot regress to child-producing wash or slice',()=>{

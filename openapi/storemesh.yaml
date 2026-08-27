@@ -42,7 +42,28 @@ paths:
   /api/tasks: {get: {summary: With eligible=me and an active sessionId return separate available OPEN tasks eligible for the selected session role and mine IN_PROGRESS or PAUSED tasks assigned to that operator, responses: {'200': {description: Separate available and mine task lists}, '400': {description: TASK_SESSION_REQUIRED}}}, post: {summary: Create an ad-hoc manually completable task or an operation-backed task with operationType, responses: {'201': {description: Task created}}}}
   /api/tasks/{taskId}/claim: {post: {summary: Atomically claim using only the active session selectedRole device and station; never the JWT full role set and never another users session, parameters: [{in: path, name: taskId, required: true, schema: {type: string}}], responses: {'201': {description: Task claimed or idempotently re-claimed by its assignee}, '403': {description: TASK_NOT_ELIGIBLE or SESSION_ACTOR_MISMATCH}, '409': {description: TASK_ASSIGNED_TO_ANOTHER or task unavailable}}}}
   /api/quality-checks: {get: {summary: List quality checks, responses: {'200': {description: Quality checks}}}, post: {summary: Record an approval, rejection, or quarantine using a checklist matching the batch actual stage and an attested JWT role, responses: {'201': {description: Quality check recorded}, '403': {description: QC_ATTESTATION_ROLE_MISMATCH}, '409': {description: QC_CHECKLIST_STAGE_MISMATCH}}}}
-  /api/quality-checks/release: {post: {summary: Release quarantined inventory and atomically align its physical container with the restored batch zone and status, responses: {'201': {description: Inventory and container released}}}}
+  /api/quality-checks/release:
+    post:
+      summary: Release quarantined inventory, resolve its linked exception, and atomically align its physical container
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [batchId, reason, attestation]
+              properties:
+                batchId: {type: string, format: uuid}
+                reason: {type: string, minLength: 1}
+                destinationZone: {type: string}
+                attestation:
+                  type: object
+                  required: [confirmed, role]
+                  properties:
+                    confirmed: {type: boolean, enum: [true]}
+                    role: {type: string, minLength: 1}
+      responses:
+        '201': {description: Inventory and container released with immutable attestation}
   /api/containers: {get: {summary: List containers, responses: {'200': {description: Containers}}}, post: {summary: Create a stage-aware container; RECEIVING_OPERATOR is limited to basic reusable BASKET or CRATE in RECEIVING, responses: {'201': {description: Container created}, '403': {description: Basic receiving-container scope exceeded}}}}
   /api/containers/{containerId}/{action}: {post: {summary: Assign inventory or move a Container; movement records a CONTAINER row and contextual BATCH cascade rows with quantity unit user movement type and optional reason, responses: {'201': {description: Container and contents moved atomically}}}}
   /api/deliveries/{deliveryId}/move-to-cold-storage: {post: {summary: Move each completed-delivery container to dirty cold storage, responses: {'201': {description: Containers moved}}}}

@@ -35,9 +35,16 @@ export function extractServerRoutes(server) {
 
 export function extractOpenApiRoutes(openapi) {
   const found=[];
+  let currentPath=null;
   for(const line of openapi.split(/\r?\n/)){
-    const entry=line.match(/^  (\/[^:]+):\s*\{(.*)$/);if(!entry)continue;
-    for(const method of entry[2].matchAll(/(?:^|[{,]\s*)(get|post|put|patch|delete|options|head|trace)\s*:/gi))found.push({method:method[1].toUpperCase(),path:entry[1]});
+    const entry=line.match(/^  (\/[^:]+):\s*(?:\{(.*))?$/);
+    if(entry){
+      currentPath=entry[1];
+      for(const method of (entry[2]??'').matchAll(/(?:^|[{,]\s*)(get|post|put|patch|delete|options|head|trace)\s*:/gi))found.push({method:method[1].toUpperCase(),path:currentPath});
+      continue;
+    }
+    const method=currentPath&&line.match(/^    (get|post|put|patch|delete|options|head|trace)\s*:/i);
+    if(method)found.push({method:method[1].toUpperCase(),path:currentPath});
   }
   return found;
 }
