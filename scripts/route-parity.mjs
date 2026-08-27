@@ -85,6 +85,8 @@ export function assertCriticalOperationContracts(openapi){
   if(cycles&&(!cycles.includes('ACTIVE STATION_MACHINES')||!cycles.includes('session station and cycle type')||!cycles.includes('MACHINE_NOT_CONFIGURED')))throw new Error('OpenAPI cycle contract must enforce active station-machine configuration');
   if(configurations&&(!configurations.includes('PACKAGING PRINTING CONSUMABLES or STATION_MACHINES')||!configurations.includes('plain JSON object')||!configurations.includes('CONFIGURATION_SCOPE_UNKNOWN')))throw new Error('OpenAPI configuration contract must document its scope and value validation');
   if(masterUpdate&&!masterUpdate.includes('MASTER_DATA_FIELDS_INVALID'))throw new Error('OpenAPI master-data update contract must reject blank names');
+  const trace=openapi.match(/^  \/api\/trace\/\{batchId\}:.*$/m)?.[0]??'';
+  if(trace&&(!trace.includes('inventory:read')||!trace.includes('TRACE_SEARCHED')||!trace.includes('GENEALOGY_PARENT_MISSING')||!trace.includes('GENEALOGY_CYCLE_DETECTED')))throw new Error('OpenAPI trace contract must document authorization, search audit, and genealogy integrity exceptions');
 }
 
 async function main(){
