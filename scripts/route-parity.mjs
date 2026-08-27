@@ -79,6 +79,8 @@ export function assertCriticalOperationContracts(openapi){
   if(printAction&&(!printAction.includes('non-empty reason')||!printAction.includes('PRINTING configuration')||!printAction.includes('resolves matching label-failure exceptions')))throw new Error('OpenAPI print retry contract must document reason, configured excessive-reprint control, and automatic exception resolution');
   const consumables=openapi.match(/^  \/api\/consumables:.*$/m)?.[0]??'',consumableReceipt=openapi.match(/^  \/api\/consumables\/\{consumableId\}\/receive:.*$/m)?.[0]??'';
   if(consumables&&(!consumables.includes('immediately evaluate its reorder threshold')||!consumableReceipt.includes('auto-resolve its reorder exception')))throw new Error('OpenAPI consumable contract must evaluate thresholds on creation and receipt and resolve replenished alerts');
+  const movement=openapi.match(/^  \/api\/movements:.*$/m)?.[0]??'',containerAction=openapi.match(/^  \/api\/containers\/\{containerId\}\/\{action\}:.*$/m)?.[0]??'';
+  if(movement&&(!movement.includes('free-standing Batch')||!movement.includes('BATCH_MOVE_REQUIRES_CONTAINER_MOVE')||!movement.includes('quantity unit user object type movement type'))||containerAction&&(!containerAction.includes('CONTAINER row')||!containerAction.includes('BATCH cascade rows')))throw new Error('OpenAPI movement contract must preserve physical carrier truth and context-complete movement rows');
 }
 
 async function main(){
