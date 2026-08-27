@@ -81,6 +81,10 @@ export function assertCriticalOperationContracts(openapi){
   if(consumables&&(!consumables.includes('immediately evaluate its reorder threshold')||!consumableReceipt.includes('auto-resolve its reorder exception')))throw new Error('OpenAPI consumable contract must evaluate thresholds on creation and receipt and resolve replenished alerts');
   const movement=openapi.match(/^  \/api\/movements:.*$/m)?.[0]??'',containerAction=openapi.match(/^  \/api\/containers\/\{containerId\}\/\{action\}:.*$/m)?.[0]??'';
   if(movement&&(!movement.includes('free-standing Batch')||!movement.includes('BATCH_MOVE_REQUIRES_CONTAINER_MOVE')||!movement.includes('quantity unit user object type movement type'))||containerAction&&(!containerAction.includes('CONTAINER row')||!containerAction.includes('BATCH cascade rows')))throw new Error('OpenAPI movement contract must preserve physical carrier truth and context-complete movement rows');
+  const cycles=openapi.match(/^  \/api\/cycles:.*$/m)?.[0]??'',configurations=openapi.match(/^  \/api\/configurations:.*$/m)?.[0]??'',masterUpdate=openapi.match(/^  \/api\/master-data\/\{catalog\}\/\{itemId\}\/update:.*$/m)?.[0]??'';
+  if(cycles&&(!cycles.includes('ACTIVE STATION_MACHINES')||!cycles.includes('session station and cycle type')||!cycles.includes('MACHINE_NOT_CONFIGURED')))throw new Error('OpenAPI cycle contract must enforce active station-machine configuration');
+  if(configurations&&(!configurations.includes('PACKAGING PRINTING CONSUMABLES or STATION_MACHINES')||!configurations.includes('plain JSON object')||!configurations.includes('CONFIGURATION_SCOPE_UNKNOWN')))throw new Error('OpenAPI configuration contract must document its scope and value validation');
+  if(masterUpdate&&!masterUpdate.includes('MASTER_DATA_FIELDS_INVALID'))throw new Error('OpenAPI master-data update contract must reject blank names');
 }
 
 async function main(){
