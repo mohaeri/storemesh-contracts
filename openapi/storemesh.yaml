@@ -13,6 +13,7 @@ paths:
   /api/receiving: {post: {summary: Receive and identify a batch, parameters: [{in: header, name: Idempotency-Key, required: true, schema: {type: string}}], responses: {'201': {description: Batch received}}}}
   /api/deliveries: {get: {summary: List supplier deliveries and their basket weigh records, responses: {'200': {description: Deliveries}}}, post: {summary: Start a multi-basket supplier delivery, responses: {'201': {description: Delivery opened}}}}
   /api/deliveries/{deliveryId}/complete: {post: {summary: Complete a delivery and create its aggregate receiving batch and cold-storage task, responses: {'201': {description: Delivery completed}, '409': {description: Empty or already completed delivery}}}}
+  /api/deliveries/{deliveryId}/cancel: {post: {summary: Cancel an empty open delivery in its owning session with a required reason, responses: {'201': {description: Delivery cancelled}, '400': {description: Cancellation reason required}, '409': {description: Delivery is not open or already has weighed baskets}}}}
   /api/harvest-periods: {get: {summary: List admin-managed harvest period definitions, responses: {'200': {description: Harvest periods}}}, post: {summary: Create a harvest period definition, responses: {'201': {description: Harvest period created}}}}
   /api/harvest-periods/{periodId}/update: {post: {summary: Update a harvest period label or status, responses: {'201': {description: Harvest period updated}}}}
   /api/inventory: {get: {summary: Current site inventory, responses: {'200': {description: Inventory}}}}
