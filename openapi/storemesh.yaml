@@ -111,14 +111,27 @@ paths:
   /api/exceptions: {get: {summary: List durable operational exceptions including operator notes, responses: {'200': {description: Exceptions}}}, post: {summary: Raise an exception with an optional free-text note; open HIGH or CRITICAL Batch exceptions block operations, requestBody: {required: true, content: {application/json: {schema: {type: object, properties: {type: {type: string}, entityType: {type: string}, entityId: {type: string, format: uuid}, severity: {type: string}, note: {type: string, nullable: true}}}}}}, responses: {'201': {description: Exception raised}}}}
   /api/exceptions/{exceptionId}/assign: {post: {summary: Assign an exception, responses: {'201': {description: Exception assigned}}}}
   /api/exceptions/{exceptionId}/resolve: {post: {summary: Resolve an exception, responses: {'201': {description: Exception resolved}}}}
-  /api/master-data/{catalog}: {get: {summary: List a master-data catalog, responses: {'200': {description: Catalog}}}, post: {summary: Create a catalog item, responses: {'201': {description: Item created}}}}
-  /api/master-data/{catalog}/{itemId}/update: {post: {summary: Update a catalog item; a supplied name must remain non-blank or MASTER_DATA_FIELDS_INVALID is returned, responses: {'201': {description: Item updated}, '400': {description: Invalid catalog fields}}}}
+  /api/master-data/{catalog}: {get: {summary: List a master-data catalog; supplier items may include the optional SupplierReference contact region and settlement fields, responses: {'200': {description: Catalog}}}, post: {summary: Create a catalog item including optional SupplierReference fields when catalog is suppliers, responses: {'201': {description: Item created}}}}
+  /api/master-data/{catalog}/{itemId}/update: {post: {summary: Update a catalog item including optional SupplierReference fields for suppliers; supplied strings must remain non-blank or MASTER_DATA_FIELDS_INVALID is returned, responses: {'201': {description: Item updated}, '400': {description: Invalid catalog fields}}}}
   /api/qc-checklists: {get: {summary: List QC checklist definitions, responses: {'200': {description: Checklists}}}, post: {summary: Create a QC checklist, responses: {'201': {description: Checklist created}}}}
   /api/reports/operations: {get: {summary: Aggregated yield utilization exception and task reports, responses: {'200': {description: Operational reports}}}}
 components:
   securitySchemes:
     bearerAuth: {type: http, scheme: bearer}
   schemas:
+    SupplierReference:
+      type: object
+      required: [id, code, name, status]
+      properties:
+        id: {type: string, format: uuid}
+        code: {type: string}
+        name: {type: string}
+        status: {enum: [ACTIVE, INACTIVE]}
+        contactName: {type: string}
+        contactPhone: {type: string}
+        contactEmail: {type: string}
+        region: {type: string}
+        settlementReference: {type: string}
     Error:
       type: object
       required: [success, errorCode, message]
