@@ -85,8 +85,8 @@ paths:
   /api/internal-transfers: {get: {summary: List received transfers, responses: {'200': {description: Transfers}}}}
   /api/internal-transfers/receive: {post: {summary: Receive a signed dispatched manifest only after scanning every unique package and an available empty RECEIVING container; new batches are assigned to that container and receivedBy is derived from the authenticated session, responses: {'201': {description: Transfer received into the scanned container}, '400': {description: CONTAINER_SCAN_REQUIRED}, '409': {description: Duplicate manifest content invalid container or physical scan failure}}}}
   /api/inventory-adjustments: {get: {summary: List inventory adjustments, responses: {'200': {description: Adjustments}}}, post: {summary: Record a controlled adjustment, responses: {'201': {description: Adjustment recorded}}}}
-  /api/audit: {get: {summary: Read immutable audit events, responses: {'200': {description: Audit events}}}}
-  /api/outbox: {get: {summary: Read cloud delivery outbox, responses: {'200': {description: Outbox events}}}}
+  /api/audit: {get: {summary: Read immutable audit events with per-site monotonic sequence ordering in addition to occurredAt, responses: {'200': {description: Audit Event envelopes including sequence}}}}
+  /api/outbox: {get: {summary: Read cloud delivery outbox ordered by site and monotonic sequence, responses: {'200': {description: Outbox Event envelopes including sequence}}}}
   /ready: {get: {security: [], responses: {'200': {description: Dependencies ready}, '503': {description: Dependency unavailable}}}}
   /metrics: {get: {security: [], responses: {'200': {description: Prometheus metrics}}}}
   /api/sessions/{sessionId}/{action}: {post: {summary: Suspend, resume, complete, or cancel a session, parameters: [{in: path, name: sessionId, required: true, schema: {type: string}}, {in: path, name: action, required: true, schema: {enum: [suspend, resume, complete, cancel]}}], responses: {'201': {description: Session transitioned}, '409': {description: Invalid transition}}}}
@@ -141,3 +141,15 @@ components:
         dispatchedAt: {type: string, format: date-time}
         packages: {type: array, minItems: 1, items: {type: object}}
         signature: {type: string, description: Base64url HMAC-SHA256 over the canonical unsigned manifest}
+    Event:
+      type: object
+      required: [id, site, sequence, type, entityId, payload, schemaVersion, occurredAt]
+      properties:
+        id: {type: string, format: uuid}
+        site: {type: string}
+        sequence: {type: integer, format: int64, minimum: 1, description: Monotonic ordering within one site}
+        type: {type: string}
+        entityId: {type: [string, 'null']}
+        payload: {type: object}
+        schemaVersion: {type: integer}
+        occurredAt: {type: string, format: date-time}
