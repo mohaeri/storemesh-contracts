@@ -63,7 +63,29 @@ paths:
   /api/trace/{batchId}/forward: {get: {summary: Resolve the single-site recall path from a Batch through descendants, outer packages or Fresh Shipping Boxes, shipments and customers; internal transfers return crossesTransferBoundary true and stop at destinationSite; records TRACE_SEARCHED with BATCH_FORWARD, parameters: [{in: path, name: batchId, required: true, schema: {type: string}}], responses: {'200': {description: Forward recall graph and integrity issues}, '403': {description: inventory read permission required}}}}
   /api/tasks: {get: {summary: With eligible=me and an active sessionId return separate available OPEN or BLOCKED tasks eligible for the selected session role and mine IN_PROGRESS PAUSED or BLOCKED tasks assigned to that operator; each task includes immutable readable code optional dueAt and expectedDurationMinutes a derived overdue flag nullable blockedByExceptionId and blockingException type/severity, responses: {'200': {description: Separate available and mine task lists}, '400': {description: TASK_SESSION_REQUIRED}}}, post: {summary: Create an ad-hoc manually completable task or an operation-backed task with operationType and optional ISO dueAt and positive expectedDurationMinutes, responses: {'201': {description: Task created with server-generated code}}}}
   /api/tasks/{taskId}/claim: {post: {summary: Atomically claim using only the active session selectedRole device and station; never the JWT full role set and never another users session, parameters: [{in: path, name: taskId, required: true, schema: {type: string}}], responses: {'201': {description: Task claimed or idempotently re-claimed by its assignee}, '403': {description: TASK_NOT_ELIGIBLE or SESSION_ACTOR_MISMATCH}, '409': {description: TASK_ASSIGNED_TO_ANOTHER or task unavailable}}}}
-  /api/quality-checks: {get: {summary: List quality checks, responses: {'200': {description: Quality checks}}}, post: {summary: Record an approval, rejection, or quarantine using a checklist matching the batch actual stage and an attested JWT role, responses: {'201': {description: Quality check recorded}, '403': {description: QC_ATTESTATION_ROLE_MISMATCH}, '409': {description: QC_CHECKLIST_STAGE_MISMATCH}}}}
+  /api/quality-checks:
+    get: {summary: List quality checks including immutable sessionId and deviceId evidence, responses: {'200': {description: Quality checks}}}
+    post:
+      summary: Record an approval rejection or quarantine using an active operational session a checklist matching the batch actual stage and an attested JWT role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [batchId, checklistId, responses, result, sessionId, attestation]
+              properties:
+                batchId: {type: string, format: uuid}
+                checklistId: {type: string, format: uuid}
+                responses: {type: array, items: {type: object}}
+                result: {type: string, enum: [APPROVED, REJECTED, QUARANTINED]}
+                sessionId: {type: string, format: uuid}
+                attestation: {type: object}
+      responses:
+        '201': {description: Quality check recorded with sessionId and server-derived deviceId}
+        '404': {description: SESSION_NOT_FOUND}
+        '403': {description: QC_ATTESTATION_ROLE_MISMATCH}
+        '409': {description: QC_CHECKLIST_STAGE_MISMATCH}
   /api/quality-checks/release:
     post:
       summary: Release quarantined inventory, resolve its linked exception, and atomically align its physical container
@@ -73,11 +95,12 @@ paths:
           application/json:
             schema:
               type: object
-              required: [batchId, reason, attestation]
+              required: [batchId, reason, sessionId, attestation]
               properties:
                 batchId: {type: string, format: uuid}
                 reason: {type: string, minLength: 1}
                 destinationZone: {type: string}
+                sessionId: {type: string, format: uuid}
                 attestation:
                   type: object
                   required: [confirmed, role]
@@ -85,7 +108,8 @@ paths:
                     confirmed: {type: boolean, enum: [true]}
                     role: {type: string, minLength: 1}
       responses:
-        '201': {description: Inventory and container released with immutable attestation}
+        '201': {description: Inventory and container released with immutable attestation sessionId and server-derived deviceId}
+        '404': {description: SESSION_NOT_FOUND}
   /api/containers: {get: {summary: List containers, responses: {'200': {description: Containers}}}, post: {summary: Create a stage-aware container; RECEIVING_OPERATOR is limited to basic reusable BASKET or CRATE in RECEIVING, responses: {'201': {description: Container created}, '403': {description: Basic receiving-container scope exceeded}}}}
   /api/containers/{containerId}/{action}: {post: {summary: Assign inventory or move a Container; movement records a CONTAINER row and contextual BATCH cascade rows with quantity unit user movement type and optional reason, responses: {'201': {description: Container and contents moved atomically}}}}
   /api/containers/{containerId}/priority: {post: {summary: Manager sets NORMAL HIGH or URGENT container priority with a required reason and CONTAINER_PRIORITY_SET audit event, responses: {'201': {description: Priority set}, '400': {description: Invalid priority or missing reason}, '403': {description: Manager permission required}}}}
@@ -142,7 +166,7 @@ paths:
   /api/exceptions/{exceptionId}/close: {post: {summary: Manager-gated closure advances RESOLVED or DISMISSED to CLOSED records closedBy and closedAt and optionally stores rootCause correctiveAction and preventiveAction, responses: {'201': {description: Exception CLOSED}, '403': {description: override approve permission required}}}}
   /api/master-data/{catalog}: {get: {summary: List a master-data catalog; supplier items may include the optional SupplierReference contact region and settlement fields, responses: {'200': {description: Catalog}}}, post: {summary: Create a catalog item including optional SupplierReference fields when catalog is suppliers, responses: {'201': {description: Item created}}}}
   /api/master-data/{catalog}/{itemId}/update: {post: {summary: Update a catalog item including optional SupplierReference fields for suppliers; supplied strings must remain non-blank or MASTER_DATA_FIELDS_INVALID is returned, responses: {'201': {description: Item updated}, '400': {description: Invalid catalog fields}}}}
-  /api/qc-checklists: {get: {summary: List QC checklist definitions, responses: {'200': {description: Checklists}}}, post: {summary: Create a QC checklist, responses: {'201': {description: Checklist created}}}}
+  /api/qc-checklists: {get: {summary: List QC checklist definitions, responses: {'200': {description: Checklists}}}, post: {summary: Create a QC checklist for a referenced product and one of RECEIVING SORTING WASHING SLICING FREEZING FREEZE_DRYING DRYING or PACKAGING, responses: {'201': {description: Checklist created}, '400': {description: QC_CHECKLIST_STAGE_INVALID}, '404': {description: MASTER_DATA_REFERENCE_INVALID}}}}
   /api/reports/operations: {get: {summary: Aggregated yield utilization exception and task reports; exception dashboard includes critical overdue from configurable severity SLA byCategory and byProductionArea, responses: {'200': {description: Operational reports}}}}
   /api/reports/sorting-loss: {get: {summary: Aggregate sorting loss by site product and lossReason, responses: {'200': {description: Items contain site product lossReason totalLossKg and eventCount}}}}
 components:
