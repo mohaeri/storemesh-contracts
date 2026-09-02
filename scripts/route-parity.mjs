@@ -17,6 +17,7 @@ function regexPath(source) {
 export function extractServerRoutes(server) {
   const found=[];
   for(const match of server.matchAll(/req\.method\s*===\s*['"]([A-Z]+)['"]\s*&&\s*u\.pathname\s*===\s*['"]([^'"]+)['"]/g))found.push({method:match[1],path:match[2]});
+  for(const match of server.matchAll(/req\.method\s*===\s*['"]([A-Z]+)['"]\s*&&\s*req\.url\s*===\s*['"]([^'"]+)['"]/g))found.push({method:match[1],path:match[2]});
   for(const match of server.matchAll(/req\.method\s*===\s*['"]([A-Z]+)['"]\s*&&\s*u\.pathname\.startsWith\(\s*['"]([^'"]+)['"]\s*\)/g))found.push({method:match[1],path:match[2].replace(/\/$/,'')+'/{}'});
 
   for(const pathnameTest of server.matchAll(/\.test\(\s*u\.pathname\s*\)/g)){
@@ -98,10 +99,13 @@ export function assertCriticalOperationContracts(openapi){
 
 async function main(){
   const serverPath=process.env.SITE_SERVER_SOURCE||resolve('..','storemesh-site-server','src','server.js');
-  const [server,openapi]=await Promise.all([readFile(serverPath,'utf8'),readFile(resolve('openapi','storemesh.yaml'),'utf8')]);
+  const cloudPath=process.env.CLOUD_SERVER_SOURCE||resolve('..','storemesh-cloud','src','server.js');
+  const [server,openapi,cloud,cloudOpenapi]=await Promise.all([readFile(serverPath,'utf8'),readFile(resolve('openapi','storemesh.yaml'),'utf8'),readFile(cloudPath,'utf8'),readFile(resolve('openapi','storemesh-cloud.yaml'),'utf8')]);
   const count=assertRouteParity(server,openapi);
+  const cloudCount=assertRouteParity(cloud,cloudOpenapi);
   assertCriticalOperationContracts(openapi);
   console.log(`OpenAPI/server parity verified for ${count} method + route templates`);
+  console.log(`Cloud OpenAPI/server parity verified for ${cloudCount} method + route templates`);
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)await main();
