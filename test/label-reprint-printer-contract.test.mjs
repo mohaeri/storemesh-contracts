@@ -12,3 +12,5 @@ test('print contract distinguishes automatic and overridden printer routing',asy
   const yaml=await readFile(new URL('../openapi/storemesh.yaml',import.meta.url),'utf8');
   for(const token of['defaultPrinterId','selectedPrinterId','printerOverride','/api/print-jobs/{jobId}/printer'])assert.match(yaml,new RegExp(token.replace(/[{}]/g,'\\$&')));
 });
+
+test('initial print failure uses the shared structured reason codes',async()=>{const yaml=await readFile(new URL('../openapi/storemesh.yaml',import.meta.url),'utf8'),route=yaml.match(/^  \/api\/print-jobs\/\{jobId\}\/\{action\}:.*$/m)?.[0]??'';for(const token of['reasonCode','PRINTER_ERROR','PAPER_FINISHED','RIBBON_FINISHED','PRINT_FAIL_REASON_INVALID'])assert.match(route,new RegExp(token))});
