@@ -1,0 +1,2 @@
+import test from'node:test';import assert from'node:assert/strict';import{readFile}from'node:fs/promises';
+test('slicing tray allocation resource publishes physical scan quantity sequence and confirmation',async()=>{const yaml=await readFile(new URL('../openapi/storemesh.yaml',import.meta.url),'utf8');for(const token of['/api/tray-allocations','/api/batches/{batchId}/tray-allocations','optional per-tray quantity','explicit completion confirmation','releases the source basket'])assert.ok(yaml.includes(token),`missing ${token}`)});

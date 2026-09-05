@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import{readFile}from'node:fs/promises';
+const spec=await readFile(new URL('../openapi/storemesh.yaml',import.meta.url),'utf8');
+test('exception taxonomy lifecycle search CAPA and dashboard are contracted',()=>{for(const token of['EXCEPTION_CATEGORIES','defaulting to System','/api/exceptions/{exceptionId}/start','ASSIGNED to IN_PROGRESS','/api/exceptions/{exceptionId}/close','rootCause','correctiveAction','preventiveAction','closedBy','status severity category from to operator machineId product batchId shipmentId and assignedTo','configurable severity SLA','byCategory','byProductionArea'])assert.ok(spec.includes(token),`missing ${token}`)});

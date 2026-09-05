@@ -17,6 +17,7 @@ function regexPath(source) {
 export function extractServerRoutes(server) {
   const found=[];
   for(const match of server.matchAll(/req\.method\s*===\s*['"]([A-Z]+)['"]\s*&&\s*u\.pathname\s*===\s*['"]([^'"]+)['"]/g))found.push({method:match[1],path:match[2]});
+  for(const match of server.matchAll(/req\.method\s*===\s*['"]([A-Z]+)['"]\s*&&\s*req\.url\s*===\s*['"]([^'"]+)['"]/g))found.push({method:match[1],path:match[2]});
   for(const match of server.matchAll(/req\.method\s*===\s*['"]([A-Z]+)['"]\s*&&\s*u\.pathname\.startsWith\(\s*['"]([^'"]+)['"]\s*\)/g))found.push({method:match[1],path:match[2].replace(/\/$/,'')+'/{}'});
 
   for(const pathnameTest of server.matchAll(/\.test\(\s*u\.pathname\s*\)/g)){
@@ -35,9 +36,16 @@ export function extractServerRoutes(server) {
 
 export function extractOpenApiRoutes(openapi) {
   const found=[];
+  let currentPath=null;
   for(const line of openapi.split(/\r?\n/)){
-    const entry=line.match(/^  (\/[^:]+):\s*\{(.*)$/);if(!entry)continue;
-    for(const method of entry[2].matchAll(/(?:^|[{,]\s*)(get|post|put|patch|delete|options|head|trace)\s*:/gi))found.push({method:method[1].toUpperCase(),path:entry[1]});
+    const entry=line.match(/^  (\/[^:]+):\s*(?:\{(.*))?$/);
+    if(entry){
+      currentPath=entry[1];
+      for(const method of (entry[2]??'').matchAll(/(?:^|[{,]\s*)(get|post|put|patch|delete|options|head|trace)\s*:/gi))found.push({method:method[1].toUpperCase(),path:currentPath});
+      continue;
+    }
+    const method=currentPath&&line.match(/^    (get|post|put|patch|delete|options|head|trace)\s*:/i);
+    if(method)found.push({method:method[1].toUpperCase(),path:currentPath});
   }
   return found;
 }
@@ -52,11 +60,52 @@ export function assertRouteParity(server,openapi) {
   return serverRoutes.length;
 }
 
+export function assertCriticalOperationContracts(openapi){
+  const transform=openapi.match(/^  \/api\/transforms:.*$/m)?.[0]??'';
+  if(!transform.includes('identity-preserving WASH or SLICE')||!transform.includes('observation weights never replace'))throw new Error('OpenAPI transform contract must preserve WASH/SLICE batch identity and authoritative inventory weight');
+  const sorting=openapi.match(/^  \/api\/sorting:.*$/m)?.[0]??'';
+  if(!sorting.includes('distinct empty physical output container')||!sorting.includes('SORT_OUTPUT_CONTAINER_SCAN_REQUIRED'))throw new Error('OpenAPI sorting contract must require a distinct scanned physical container for every output');
+  const shipment=openapi.match(/^  \/api\/shipments:.*$/m)?.[0]??'',shipmentScan=openapi.match(/^  \/api\/shipments\/\{shipmentId\}\/scans:.*$/m)?.[0]??'',shipmentAction=openapi.match(/^  \/api\/shipments\/\{shipmentId\}\/\{action\}:.*$/m)?.[0]??'';
+  if(shipment&&(!shipment.includes('Fresh Shipping Boxes')||!shipmentScan.includes('Fresh Shipping Box')))throw new Error('OpenAPI customer-shipment contract must include physically scanned Fresh Shipping Boxes');
+  if(shipmentAction){
+    for(const term of['latest APPROVED QC','genuine completed printing','no blocking exception'])if(!shipment.includes(term))throw new Error(`OpenAPI shipment creation must document ${term}`);
+    for(const term of['revalidat','current status','QC','genuine print','blocking exceptions'])if(!shipmentScan.includes(term)||!shipmentAction.includes(term))throw new Error(`OpenAPI shipment scan and transitions must document ${term}`);
+  }
+  const freshNets=openapi.match(/^  \/api\/fresh-net-lots:.*$/m)?.[0]??'';
+  if(freshNets&&(!freshNets.includes('physically scanned BASKET or CRATE')||!freshNets.includes('CONTAINER_SCAN_REQUIRED')))throw new Error('OpenAPI Fresh Export contract must require a scanned physical source container');
+  const freshBoxes=openapi.match(/^  \/api\/fresh-shipping-boxes:.*$/m)?.[0]??'',freshDrafts=openapi.match(/^  \/api\/fresh-shipping-boxes\/drafts:.*$/m)?.[0]??'',freshConfirm=openapi.match(/^  \/api\/fresh-shipping-boxes\/\{id\}\/confirm:.*$/m)?.[0]??'',freshCold=openapi.match(/^  \/api\/fresh-shipping-boxes\/\{id\}\/cold-holding:.*$/m)?.[0]??'';
+  if(freshBoxes&&(!freshBoxes.includes('atomic draft plus confirm')||!freshBoxes.includes('measurementId')||!freshDrafts.includes('aggregated net-lot allocations')||!freshDrafts.includes('FRESH_SHIPPING_BOX_FULL')||!freshConfirm.includes('LABEL_PENDING')||!freshCold.includes('LABEL_PRINTED')||!freshCold.includes('READY_TO_SHIP')))throw new Error('OpenAPI Fresh Shipping Box contract must publish draft confirmation measurement and cold-holding readiness');
+  const internalCreate=openapi.match(/^  \/api\/internal-shipments:.*$/m)?.[0]??'',internalAction=openapi.match(/^  \/api\/internal-shipments\/\{shipmentId\}\/\{action\}:.*$/m)?.[0]??'',internalReceive=openapi.match(/^  \/api\/internal-transfers\/receive:.*$/m)?.[0]??'';
+  if(internalCreate&&(!internalCreate.includes('distinct active catalog site')||!internalCreate.includes('unique eligible top-level packages')))throw new Error('OpenAPI internal-transfer creation must reject self unknown sites and duplicate packages');
+  if(internalAction&&(!internalAction.includes('active session and vehicle')||!internalAction.includes('latest APPROVED QC')||!internalAction.includes('completed print')||!internalAction.includes('cancel releases reserved packages')))throw new Error('OpenAPI internal-transfer transitions must revalidate eligibility and release cancelled reservations');
+  if(internalReceive&&(!internalReceive.includes('available empty RECEIVING container')||!internalReceive.includes('receivedBy is derived from the authenticated session')||!internalReceive.includes('unique package')))throw new Error('OpenAPI internal-transfer receipt must require physical carrier scans and server-derived receiver identity');
+  const tasks=openapi.match(/^  \/api\/tasks:.*$/m)?.[0]??'',taskClaim=openapi.match(/^  \/api\/tasks\/\{taskId\}\/claim:.*$/m)?.[0]??'',taskRecommended=openapi.match(/^  \/api\/tasks\/recommended:.*$/m)?.[0]??'';
+  if(tasks&&(!tasks.includes('separate available')||!tasks.includes('selected session role')||!tasks.includes('operationType')))throw new Error('OpenAPI task listing must separate availability and bind operation-backed tasks');
+  if(taskClaim&&(!taskClaim.includes('selectedRole device and station')||!taskClaim.includes('never the JWT full role set')||!taskClaim.includes('SESSION_ACTOR_MISMATCH')))throw new Error('OpenAPI task claim must use the active role-scoped session');
+  if(taskRecommended&&!taskRecommended.includes('active session selectedRole'))throw new Error('OpenAPI task recommendation must use the active role-scoped session');
+  const printAction=openapi.match(/^  \/api\/print-jobs\/\{jobId\}\/\{action\}:.*$/m)?.[0]??'';
+  if(printAction&&(!printAction.includes('non-empty reason')||!printAction.includes('PRINTING configuration')||!printAction.includes('resolves matching label-failure exceptions')))throw new Error('OpenAPI print retry contract must document reason, configured excessive-reprint control, and automatic exception resolution');
+  const consumables=openapi.match(/^  \/api\/consumables:.*$/m)?.[0]??'',consumableReceipt=openapi.match(/^  \/api\/consumables\/\{consumableId\}\/receive:.*$/m)?.[0]??'';
+  if(consumables&&(!consumables.includes('immediately evaluate its reorder threshold')||!consumableReceipt.includes('auto-resolve its reorder exception')))throw new Error('OpenAPI consumable contract must evaluate thresholds on creation and receipt and resolve replenished alerts');
+  const movement=openapi.match(/^  \/api\/movements:.*$/m)?.[0]??'',containerAction=openapi.match(/^  \/api\/containers\/\{containerId\}\/\{action\}:.*$/m)?.[0]??'';
+  if(movement&&(!movement.includes('free-standing Batch')||!movement.includes('BATCH_MOVE_REQUIRES_CONTAINER_MOVE')||!movement.includes('quantity unit user object type movement type'))||containerAction&&(!containerAction.includes('CONTAINER row')||!containerAction.includes('BATCH cascade rows')))throw new Error('OpenAPI movement contract must preserve physical carrier truth and context-complete movement rows');
+  const cycles=openapi.match(/^  \/api\/cycles:.*$/m)?.[0]??'',configurations=openapi.match(/^  \/api\/configurations:.*$/m)?.[0]??'',masterUpdate=openapi.match(/^  \/api\/master-data\/\{catalog\}\/\{itemId\}\/update:.*$/m)?.[0]??'';
+  if(cycles&&(!cycles.includes('ACTIVE STATION_MACHINES')||!cycles.includes('session station and cycle type')||!cycles.includes('MACHINE_NOT_CONFIGURED')))throw new Error('OpenAPI cycle contract must enforce active station-machine configuration');
+  if(configurations&&(!configurations.includes('SYSTEM_TIMEOUTS')||!configurations.includes('schema-validated')||!configurations.includes('CONFIGURATION_SCOPE_UNKNOWN')||!configurations.includes('CONFIGURATION_SCHEMA_INVALID')||!configurations.includes('currentActiveValues')))throw new Error('OpenAPI configuration contract must document its scopes, schema validation and approval comparison');
+  if(masterUpdate&&!masterUpdate.includes('MASTER_DATA_FIELDS_INVALID'))throw new Error('OpenAPI master-data update contract must reject blank names');
+  const trace=openapi.match(/^  \/api\/trace\/\{batchId\}:.*$/m)?.[0]??'';
+  if(trace&&(!trace.includes('inventory:read')||!trace.includes('TRACE_SEARCHED')||!trace.includes('GENEALOGY_PARENT_MISSING')||!trace.includes('GENEALOGY_CYCLE_DETECTED')))throw new Error('OpenAPI trace contract must document authorization, search audit, and genealogy integrity exceptions');
+}
+
 async function main(){
   const serverPath=process.env.SITE_SERVER_SOURCE||resolve('..','storemesh-site-server','src','server.js');
-  const [server,openapi]=await Promise.all([readFile(serverPath,'utf8'),readFile(resolve('openapi','storemesh.yaml'),'utf8')]);
+  const cloudPath=process.env.CLOUD_SERVER_SOURCE||resolve('..','storemesh-cloud','src','server.js');
+  const [server,openapi,cloud,cloudOpenapi]=await Promise.all([readFile(serverPath,'utf8'),readFile(resolve('openapi','storemesh.yaml'),'utf8'),readFile(cloudPath,'utf8'),readFile(resolve('openapi','storemesh-cloud.yaml'),'utf8')]);
   const count=assertRouteParity(server,openapi);
+  const cloudCount=assertRouteParity(cloud,cloudOpenapi);
+  assertCriticalOperationContracts(openapi);
   console.log(`OpenAPI/server parity verified for ${count} method + route templates`);
+  console.log(`Cloud OpenAPI/server parity verified for ${cloudCount} method + route templates`);
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)await main();
