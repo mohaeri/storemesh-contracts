@@ -144,7 +144,7 @@ paths:
   /api/inventory-adjustments: {get: {summary: List inventory adjustment requests including LOCATION_CORRECTION drafts, responses: {'200': {description: Adjustments}}}, post: {summary: Request a weight adjustment or a LOCATION_CORRECTION with itemType itemId warehouseLocation and reason; every location correction remains draft for second-manager approval, responses: {'201': {description: Draft or approved adjustment recorded}}}}
   /api/inventory-adjustments/{id}/approve: {post: {summary: Approve a draft adjustment using four-eyes control at or above tolerance, parameters: [{in: path, name: id, required: true, schema: {type: string}}], responses: {'201': {description: Adjustment approved and inventory changed atomically}}}}
   /api/inventory-adjustments/{id}/reject: {post: {summary: Reject a draft adjustment without changing inventory, parameters: [{in: path, name: id, required: true, schema: {type: string}}], responses: {'201': {description: Adjustment rejected}}}}
-  /api/audit: {get: {summary: Read immutable live audit events with per-site monotonic sequence ordering and optionally include normalized archived history, parameters: [{in: query, name: includeArchived, required: false, schema: {type: boolean, default: false}, description: Include events moved to permanent PostgreSQL history in the same Event envelope shape}], responses: {'200': {description: Live and optionally archived Audit Event envelopes including sequence}}}}
+  /api/audit: {get: {summary: Read immutable live audit events with explicit entityType and entityId, per-site monotonic sequence ordering, and optionally normalized archived history, parameters: [{in: query, name: includeArchived, required: false, schema: {type: boolean, default: false}, description: Include events moved to permanent PostgreSQL history in the same Event envelope shape}], responses: {'200': {description: Live and optionally archived Audit Event envelopes including entityType, entityId, and sequence}}}}
   /api/outbox: {get: {summary: Read cloud delivery outbox ordered by site and monotonic sequence, responses: {'200': {description: Outbox Event envelopes including sequence}}}}
   /ready: {get: {security: [], responses: {'200': {description: Dependencies ready}, '503': {description: Dependency unavailable}}}}
   /metrics: {get: {security: [], responses: {'200': {description: Prometheus metrics}}}}
@@ -218,12 +218,13 @@ components:
         signature: {type: string, description: Base64url HMAC-SHA256 over the canonical unsigned manifest}
     Event:
       type: object
-      required: [id, site, sequence, type, entityId, payload, schemaVersion, occurredAt]
+      required: [id, site, sequence, type, entityType, entityId, payload, schemaVersion, occurredAt]
       properties:
         id: {type: string, format: uuid}
         site: {type: string}
         sequence: {type: integer, format: int64, minimum: 1, description: Monotonic ordering within one site}
         type: {type: string}
+        entityType: {type: [string, 'null'], description: Business object type; null only for legacy or entity-less events}
         entityId: {type: [string, 'null']}
         payload: {type: object}
         schemaVersion: {type: integer}
