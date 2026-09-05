@@ -76,12 +76,13 @@ components:
         staleThresholdMs: {type: number, minimum: 0}
     SiteEvent:
       type: object
-      required: [schemaVersion, id, site, type, entityType, entityId, occurredAt, payload]
+      required: [schemaVersion, id, site, type, category, entityType, entityId, occurredAt, payload]
       properties:
         schemaVersion: {type: integer, const: 2}
         id: {type: string}
         site: {type: string}
         type: {type: string}
+        category: {type: string, enum: [Authentication, Inventory, Production, Packaging, Shipping, Labeling, Exceptions, Configuration, Administration, Security]}
         entityType: {type: [string, 'null']}
         entityId: {type: [string, 'null']}
         occurredAt: {type: string, format: date-time}
