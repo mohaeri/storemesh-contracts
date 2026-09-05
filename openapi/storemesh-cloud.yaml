@@ -27,6 +27,27 @@ paths:
         '401':
           description: X-Cloud-Report-Key is invalid
           content: {application/json: {schema: {$ref: '#/components/schemas/CloudAuthenticationError'}}}
+  /api/events/export:
+    get:
+      security: [{cloudReportKey: []}]
+      description: Streams all matching events in stable occurredAt/id order by paging through the same repository query as the event list.
+      parameters:
+        - {in: query, name: site, schema: {type: string}}
+        - {in: query, name: type, schema: {type: string}}
+        - {in: query, name: category, schema: {type: string}}
+        - {in: query, name: entityType, schema: {type: string}}
+        - {in: query, name: entityId, schema: {type: string}}
+        - {in: query, name: occurredAtFrom, schema: {type: string, format: date-time}}
+        - {in: query, name: occurredAtTo, schema: {type: string, format: date-time}}
+        - {in: query, name: format, required: true, schema: {type: string, enum: [csv, ndjson]}}
+      responses:
+        '200':
+          description: Streaming event dump
+          content:
+            text/csv: {schema: {type: string}}
+            application/x-ndjson: {schema: {type: string}}
+        '400': {description: Invalid format or filter}
+        '401': {description: X-Cloud-Report-Key is invalid}
   /api/events:
     get:
       security: [{cloudReportKey: []}]
