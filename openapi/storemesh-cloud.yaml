@@ -83,6 +83,7 @@ components:
         site: {type: string}
         type: {type: string}
         category: {type: string, enum: [Authentication, Inventory, Production, Packaging, Shipping, Labeling, Exceptions, Configuration, Administration, Security]}
+        actorUsername: {type: [string, 'null'], description: Historical acting-user snapshot}
         entityType: {type: [string, 'null']}
         entityId: {type: [string, 'null']}
         occurredAt: {type: string, format: date-time}

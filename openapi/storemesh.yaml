@@ -4,7 +4,9 @@ servers: [{url: "http://localhost:3000"}]
 security: [{bearerAuth: []}]
 paths:
   /api/measurements: {post: {summary: Capture a server-timestamped raw reading from a registered active scale and operational session, including non-authoritative WASH_OBSERVATION and SLICE_OBSERVATION readings, responses: {'201': {description: Provenance-bearing measurement captured}, '403': {description: Invalid scale or station}}}}
-  /api/auth/sessions/{sessionId}/revoke: {post: {summary: Revoke an active authentication session, responses: {'200': {description: Session revoked}, '403': {description: Manager or administrator permission required}, '404': {description: Session not found}}}}
+  /api/auth/sessions/{sessionId}/revoke: {post: {summary: Revoke an active authentication session; revoking the caller's own session is the supported logout operation, responses: {'200': {description: Session revoked}, '403': {description: Manager or administrator permission required for another user's session}, '404': {description: Session not found}}}}
+  /api/auth/password/change: {post: {summary: Change the authenticated user's own password, requestBody: {required: true, content: {application/json: {schema: {type: object, required: [currentPassword, newPassword], properties: {currentPassword: {type: string}, newPassword: {type: string, minLength: 8}}}}}}, responses: {'200': {description: Password changed and PASSWORD_CHANGED audit emitted}, '400': {description: New password is too short}, '403': {description: Current password is incorrect}}}}
+  /api/users/{userId}/password/reset: {post: {summary: Permission-gated administrative password reset, parameters: [{in: path, name: userId, required: true, schema: {type: string}}], requestBody: {required: true, content: {application/json: {schema: {type: object, required: [newPassword], properties: {newPassword: {type: string, minLength: 8}}}}}}, responses: {'200': {description: Password reset and PASSWORD_RESET audit emitted}, '403': {description: credentials:issue permission and target-management boundary required}, '404': {description: User not found}}}}
   /health: {get: {security: [], responses: {'200': {description: Healthy}}}}
   /api/auth/login: {post: {security: [], summary: Authenticate a site user, responses: {'200': {description: Signed access token}, '401': {description: Invalid credentials}}}}
   /api/auth/login-badge: {post: {security: [], summary: Authenticate by a revocable scanner-originated badge code, responses: {'200': {description: Signed access token}, '401': {description: Invalid badge}}}}
@@ -225,6 +227,7 @@ components:
         sequence: {type: integer, format: int64, minimum: 1, description: Monotonic ordering within one site}
         type: {type: string}
         category: {type: string, enum: [Authentication, Inventory, Production, Packaging, Shipping, Labeling, Exceptions, Configuration, Administration, Security]}
+        actorUsername: {type: [string, 'null'], description: Historical username snapshot captured when the event was written}
         entityType: {type: [string, 'null'], description: Business object type; null only for legacy or entity-less events}
         entityId: {type: [string, 'null']}
         payload: {type: object}
