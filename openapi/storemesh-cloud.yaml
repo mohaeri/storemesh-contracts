@@ -28,6 +28,22 @@ paths:
           description: X-Cloud-Report-Key is invalid
           content: {application/json: {schema: {$ref: '#/components/schemas/CloudAuthenticationError'}}}
   /api/events:
+    get:
+      security: [{cloudReportKey: []}]
+      parameters:
+        - {in: query, name: site, schema: {type: string}}
+        - {in: query, name: type, schema: {type: string}}
+        - {in: query, name: category, schema: {type: string}}
+        - {in: query, name: entityType, schema: {type: string}}
+        - {in: query, name: entityId, schema: {type: string}}
+        - {in: query, name: occurredAtFrom, schema: {type: string, format: date-time}}
+        - {in: query, name: occurredAtTo, schema: {type: string, format: date-time}}
+        - {in: query, name: cursor, schema: {type: string}}
+        - {in: query, name: limit, schema: {type: integer, minimum: 1, maximum: 100, default: 50}}
+      responses:
+        '200': {description: Stable occurredAt/id keyset page queried directly from the event repository, content: {application/json: {schema: {$ref: '#/components/schemas/EventPage'}}}}
+        '400': {description: Invalid cursor, limit, or time range}
+        '401': {description: X-Cloud-Report-Key is invalid}
     post:
       security: [{siteCode: [], siteKey: []}]
       parameters:
@@ -48,6 +64,27 @@ paths:
         '401':
           description: Site headers do not authenticate
           content: {application/json: {schema: {$ref: '#/components/schemas/SiteAuthenticationError'}}}
+  /api/events/{id}:
+    get:
+      security: [{cloudReportKey: []}]
+      parameters: [{in: path, name: id, required: true, schema: {type: string, format: uuid}}]
+      responses:
+        '200': {description: Single Cloud event, content: {application/json: {schema: {$ref: '#/components/schemas/SiteEvent'}}}}
+        '401': {description: X-Cloud-Report-Key is invalid}
+        '404': {description: Event not found}
+  /api/object-history/{entityType}/{entityId}:
+    get:
+      security: [{cloudReportKey: []}]
+      description: Cross-site object history ordered deterministically by occurredAt then event id.
+      parameters:
+        - {in: path, name: entityType, required: true, schema: {type: string}}
+        - {in: path, name: entityId, required: true, schema: {type: string}}
+        - {in: query, name: cursor, schema: {type: string}}
+        - {in: query, name: limit, schema: {type: integer, minimum: 1, maximum: 100, default: 50}}
+      responses:
+        '200': {description: Stable cross-site history page, content: {application/json: {schema: {$ref: '#/components/schemas/EventPage'}}}}
+        '400': {description: Invalid cursor or limit}
+        '401': {description: X-Cloud-Report-Key is invalid}
 components:
   securitySchemes:
     cloudReportKey: {type: apiKey, in: header, name: X-Cloud-Report-Key}
@@ -89,6 +126,12 @@ components:
         occurredAt: {type: string, format: date-time}
         payload: {type: object}
       additionalProperties: true
+    EventPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/SiteEvent'}}
+        nextCursor: {type: [string, 'null'], description: Opaque occurredAt/id keyset cursor}
     RejectedEvent:
       type: object
       required: [id, errorCode]
