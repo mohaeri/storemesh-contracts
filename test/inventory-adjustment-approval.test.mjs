@@ -1,0 +1,2 @@
+import test from'node:test';import assert from'node:assert/strict';import{readFile}from'node:fs/promises';
+test('inventory adjustment request approval and rejection routes are published',async()=>{const yaml=await readFile(new URL('../openapi/storemesh.yaml',import.meta.url),'utf8');for(const route of['/api/inventory-adjustments:','/api/inventory-adjustments/{id}/approve:','/api/inventory-adjustments/{id}/reject:'])assert.match(yaml,new RegExp(route.replace(/[{}]/g,'\\$&')));assert.match(yaml,/four-eyes control/)});
