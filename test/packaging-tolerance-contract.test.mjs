@@ -1,0 +1,2 @@
+import test from'node:test';import assert from'node:assert/strict';import{readFile}from'node:fs/promises';
+test('UNIT package contract documents fail-closed configured tolerance',async()=>{const yaml=await readFile(new URL('../openapi/storemesh.yaml',import.meta.url),'utf8'),line=yaml.match(/^  \/api\/packages:.*$/m)?.[0]??'';for(const token of['active PACKAGING target weight and tolerance','PACKAGING_TOLERANCE_NOT_CONFIGURED','PACKAGE_WEIGHT_OUT_OF_TOLERANCE'])assert.ok(line.includes(token),`missing ${token}`)});
